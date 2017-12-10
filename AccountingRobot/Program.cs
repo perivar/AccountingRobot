@@ -7,6 +7,9 @@ using CsvHelper;
 using System.Globalization;
 using CsvHelper.TypeConversion;
 using CsvHelper.Configuration;
+using System.Configuration;
+using Newtonsoft.Json;
+using System.Net;
 
 namespace AccountingRobot
 {
@@ -14,9 +17,60 @@ namespace AccountingRobot
     {
         static void Main(string[] args)
         {
-            ReadOberloOrders(@"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\Oberlo Orders 2017-01-01-2017-12-04.xlsx");
+            //ReadOberloOrders(@"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\Oberlo Orders 2017-01-01-2017-12-04.xlsx");
             //ReadAliExpressOrders(@"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\AliExpressOrders-2017-12-10_00-59.csv");
+
+            string shopifyDomain = ConfigurationManager.AppSettings["ShopifyDomain"];
+            string shopifyAPIKey = ConfigurationManager.AppSettings["ShopifyAPIKey"];
+            string shopifyAPIPassword = ConfigurationManager.AppSettings["ShopifyAPIPassword"];
+            ReadShopifyOrders(shopifyDomain, shopifyAPIKey, shopifyAPIPassword);
+
             Console.ReadLine();
+        }
+
+        static void ReadShopifyOrders(string shopifyDomain, string shopifyAPIKey, string shopifyAPIPassword)
+        {
+            // https://stackoverflow.com/questions/28177871/shopify-and-private-applications
+
+            // GET / admin / orders.json
+            // Retrieve a list of Orders(OPEN Orders by default, use status = any for ALL orders)
+            // GET / admin / orders /#{id}.json
+            // Receive a single Order
+
+            // financial_status=paid
+            // status=any
+
+            // By default that Orders API endpoint can give you a maximum of 50 orders. 
+            // You can increase the limit to 250 orders by adding &limit=250 to the URL. 
+            // If your query has more than 250 results then you can page through them 
+            // by using the page URL parameter: https://help.shopify.com/api/reference/order
+            // limit: Amount of results (default: 50)(maximum: 250)
+            // page: Page to show, (default: 1)
+
+            //string url = String.Format("https://{0}:{1}@{2}/admin/orders.json", shopifyAPIKey, shopifyAPIPassword, shopifyDomain);
+            string url = String.Format("https://{2}/admin/orders.json?status=any", shopifyAPIKey, shopifyAPIPassword, shopifyDomain);
+
+            using (var client = new WebClient())
+            {
+                client.Encoding = System.Text.Encoding.UTF8;
+                client.Headers.Add("X-Shopify-Access-Token", shopifyAPIPassword);
+                string json = client.DownloadString(url);
+                dynamic jsonDe = JsonConvert.DeserializeObject(json);
+
+                foreach (var order in jsonDe.orders)
+                {
+                    long id = order.id;
+                    string name = order.name;
+                    string financialStatus = order.financial_status;
+                    string gateway = order.gateway;
+                    decimal totalPrice = order.total_price;
+                    decimal totalTax = order.total_tax;
+                    string customerName = order.customer.first_name;
+
+                    Console.WriteLine("{0} {1} {2} {3}", id, name, totalPrice, customerName);
+                }
+            }
+
         }
 
         static void ReadOberloOrders(string oberloOrdersFilesPath)
@@ -37,10 +91,12 @@ namespace AccountingRobot
                 Console.WriteLine("Reading worksheet {0} ...", worksheetName);
 
                 bool first = true;
-                foreach (var row in worksheet.Rows) {
-                    
+                foreach (var row in worksheet.Rows)
+                {
+
                     // skip header row
-                    if (first) {
+                    if (first)
+                    {
                         first = false;
                         continue;
                     }
