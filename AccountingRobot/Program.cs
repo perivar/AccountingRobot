@@ -23,18 +23,43 @@ namespace AccountingRobot
             string shopifyDomain = ConfigurationManager.AppSettings["ShopifyDomain"];
             string shopifyAPIKey = ConfigurationManager.AppSettings["ShopifyAPIKey"];
             string shopifyAPIPassword = ConfigurationManager.AppSettings["ShopifyAPIPassword"];
-            ReadShopifyOrders(shopifyDomain, shopifyAPIKey, shopifyAPIPassword);
+            int count = CountShopifyOrders(shopifyDomain, shopifyAPIKey, shopifyAPIPassword);
+            Console.WriteLine("{0} shopify orders", count);
+            //ReadShopifyOrders(shopifyDomain, shopifyAPIKey, shopifyAPIPassword);
 
             Console.ReadLine();
         }
 
+        static int CountShopifyOrders(string shopifyDomain, string shopifyAPIKey, string shopifyAPIPassword)
+        {
+            // GET /admin/orders/count.json
+            // Retrieve a count of all the orders
+
+            string url = String.Format("https://{0}/admin/orders/count.json?financial_status=paid&status=any", shopifyDomain);
+
+            using (var client = new WebClient())
+            {
+                // make sure we read in utf8
+                client.Encoding = System.Text.Encoding.UTF8;
+
+                // have to use the header field since normal GET url doesn't work, i.e.
+                // string url = String.Format("https://{0}:{1}@{2}/admin/orders.json", shopifyAPIKey, shopifyAPIPassword, shopifyDomain);
+                // https://stackoverflow.com/questions/28177871/shopify-and-private-applications
+                client.Headers.Add("X-Shopify-Access-Token", shopifyAPIPassword);
+                string json = client.DownloadString(url);
+
+                // parse json
+                dynamic jsonDe = JsonConvert.DeserializeObject(json);
+
+                return jsonDe.count;
+            }
+        }
+
         static void ReadShopifyOrders(string shopifyDomain, string shopifyAPIKey, string shopifyAPIPassword)
         {
-            // https://stackoverflow.com/questions/28177871/shopify-and-private-applications
-
-            // GET / admin / orders.json
-            // Retrieve a list of Orders(OPEN Orders by default, use status = any for ALL orders)
-            // GET / admin / orders /#{id}.json
+            // GET /admin/orders.json
+            // Retrieve a list of Orders(OPEN Orders by default, use status=any for ALL orders)
+            // GET /admin/orders/#{id}.json
             // Receive a single Order
 
             // financial_status=paid
@@ -47,14 +72,20 @@ namespace AccountingRobot
             // limit: Amount of results (default: 50)(maximum: 250)
             // page: Page to show, (default: 1)
 
-            //string url = String.Format("https://{0}:{1}@{2}/admin/orders.json", shopifyAPIKey, shopifyAPIPassword, shopifyDomain);
-            string url = String.Format("https://{2}/admin/orders.json?status=any", shopifyAPIKey, shopifyAPIPassword, shopifyDomain);
+            string url = String.Format("https://{0}/admin/orders.json?financial_status=paid&status=any", shopifyDomain);
 
             using (var client = new WebClient())
             {
+                // make sure we read in utf8
                 client.Encoding = System.Text.Encoding.UTF8;
+
+                // have to use the header field since normal GET url doesn't work, i.e.
+                // string url = String.Format("https://{0}:{1}@{2}/admin/orders.json", shopifyAPIKey, shopifyAPIPassword, shopifyDomain);
+                // https://stackoverflow.com/questions/28177871/shopify-and-private-applications
                 client.Headers.Add("X-Shopify-Access-Token", shopifyAPIPassword);
                 string json = client.DownloadString(url);
+
+                // parse json
                 dynamic jsonDe = JsonConvert.DeserializeObject(json);
 
                 foreach (var order in jsonDe.orders)
@@ -71,6 +102,23 @@ namespace AccountingRobot
                 }
             }
 
+        }
+
+        static void ReadShopifyOrderPage(string shopifyDomain, string shopifyAPIKey, string shopifyAPIPassword)
+        {
+            // https://ecommerce.shopify.com/c/shopify-apis-and-technology/t/paginate-api-results-113066
+            // GET /admin/products.xml?limit=250&page=1
+            // Use the /admin/products/count.json to get the count of all products. Then divide that number by 250 to get the total amount of pages.
+            /*
+            if count > 0
+                page += count.divmod(250).first
+                while page > 0
+                    puts "Processing page #{page}"
+                    products += ShopifyAPI::Product.all(:params => {:page => page, :limit => 250})
+                    page -= 1
+                end
+            end
+      */
         }
 
         static void ReadOberloOrders(string oberloOrdersFilesPath)
