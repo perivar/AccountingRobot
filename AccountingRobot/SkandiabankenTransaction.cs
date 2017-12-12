@@ -15,10 +15,11 @@ namespace AccountingRobot
         public string Text { get; set; }
         public decimal OutAccount { get; set; }
         public decimal InAccount { get; set; }
+        public decimal AccountChange { get; set; }
 
         public override string ToString()
         {
-            return string.Format("{0:yyyy-MM-dd} {1:yyyy-MM-dd} {2} {3} {4} {5:C} {6:C}", TransactionDate, InterestDate, ArchiveReference, Type, Text, OutAccount, InAccount);
+            return string.Format("{0:yyyy-MM-dd} {1:yyyy-MM-dd} {2} {3} {4} {5:C}", TransactionDate, InterestDate, ArchiveReference, Type, Text, AccountChange);
         }
     }
 }

@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AccountingRobot
 {
@@ -11,10 +7,12 @@ namespace AccountingRobot
         public string OrderNumber { get; set; }
         public DateTime CreatedDate { get; set; }
         public string FinancialStatus { get; set; }
+        public string FulfillmentStatus { get; set; }
         public string Supplier { get; set; }
         public string SKU { get; set; }
         public string ProductName { get; set; }
         public string Variant { get; set; }
+        public int Quantity { get; set; }
         public string TrackingNumber { get; set; }
         public string AliOrderNumber { get; set; }
         public string CustomerName { get; set; }

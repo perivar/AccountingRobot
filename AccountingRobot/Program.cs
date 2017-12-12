@@ -103,6 +103,9 @@ namespace AccountingRobot
                     decimal outAccount = GetDecimalFromExcelCurrencyString(outAccountString);
                     decimal inAccount = GetDecimalFromExcelCurrencyString(inAccountString);
 
+                    // set account change
+                    decimal accountChange = inAccount - outAccount;
+
                     var skandiabankenTransaction = new SkandiabankenTransaction();
                     skandiabankenTransaction.TransactionDate = transactionDate;
                     skandiabankenTransaction.InterestDate = interestDate;
@@ -111,6 +114,7 @@ namespace AccountingRobot
                     skandiabankenTransaction.Text = text;
                     skandiabankenTransaction.OutAccount = outAccount;
                     skandiabankenTransaction.InAccount = inAccount;
+                    skandiabankenTransaction.AccountChange = accountChange;
 
                     skandiabankenTransactions.Add(skandiabankenTransaction);
                 }
@@ -216,10 +220,13 @@ namespace AccountingRobot
                     shopifyOrder.Id = order.id;
                     shopifyOrder.Name = order.name;
                     shopifyOrder.FinancialStatus = order.financial_status;
+                    string fulfillmentStatusTmp = order.fulfillment_status;
+                    fulfillmentStatusTmp = (fulfillmentStatusTmp == null ? "unfulfilled" : fulfillmentStatusTmp);
+                    shopifyOrder.FulfillmentStatus = fulfillmentStatusTmp;
                     shopifyOrder.Gateway = order.gateway;
                     shopifyOrder.TotalPrice = order.total_price;
                     shopifyOrder.TotalTax = order.total_tax;
-                    shopifyOrder.CustomerName = order.customer.first_name;
+                    shopifyOrder.CustomerName = string.Format("{0} {1}", order.customer.first_name, order.customer.last_name);
 
                     shopifyOrders.Add(shopifyOrder);
                 }
@@ -239,7 +246,7 @@ namespace AccountingRobot
 
             int limit = 250;
             if (totalShopifyOrders > 0)
-            {             
+            {
                 int numPages = (int)Math.Ceiling((double)totalShopifyOrders / limit);
                 for (int i = 1; i <= numPages; i++)
                 {
@@ -283,10 +290,12 @@ namespace AccountingRobot
                     var orderNumber = row.GetCellByColumnName("A").Value.ToString(); // Order #
                     var createdDate = row.GetCellByColumnName("B").Value.ToString(); // Created
                     var financialStatus = row.GetCellByColumnName("C").Value.ToString(); // Financial status                    
+                    var fulfillmentStatus = row.GetCellByColumnName("D").Value.ToString(); // Fulfillment status                    
                     var supplier = row.GetCellByColumnName("G").Value.ToString(); // Supplier
                     var SKU = row.GetCellByColumnName("H").Value.ToString(); // SKU
                     var productName = row.GetCellByColumnName("I").Value.ToString(); // Product
                     var variant = row.GetCellByColumnName("J").Value.ToString(); // Variant
+                    var quantity = row.GetCellByColumnName("K").Value.ToString(); // Quantity
                     var trackingNumber = row.GetCellByColumnName("L"); // Tracking number
                     var aliOrderNumber = row.GetCellByColumnName("M"); // Ali Order #
                     var customerName = row.GetCellByColumnName("N").Value.ToString(); // Name
@@ -303,14 +312,17 @@ namespace AccountingRobot
                     var customerAddress2String = (customerAddress2 != null ? customerAddress2.Value.ToString() : "");
                     var orderNoteString = (orderNote != null ? orderNote.Value.ToString() : "");
 
+
                     var oberloOrder = new OberloOrder();
                     oberloOrder.OrderNumber = orderNumber;
                     oberloOrder.CreatedDate = created;
                     oberloOrder.FinancialStatus = financialStatus;
+                    oberloOrder.FulfillmentStatus = fulfillmentStatus;
                     oberloOrder.Supplier = supplier;
                     oberloOrder.SKU = SKU;
                     oberloOrder.ProductName = productName;
                     oberloOrder.Variant = variant;
+                    oberloOrder.Quantity = int.Parse(quantity);
                     oberloOrder.TrackingNumber = trackingNumberString;
                     oberloOrder.AliOrderNumber = aliOrderNumberString;
                     oberloOrder.CustomerName = customerName;
