@@ -111,7 +111,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AliExpress.cs" />
     <Compile Include="AliExpressOrder.cs" />
+    <Compile Include="FastExcelUtils.cs" />
+    <Compile Include="Oberlo.cs" />
+    <Compile Include="Shopify.cs" />
+    <Compile Include="Skandiabanken.cs" />
     <Compile Include="OberloOrder.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
