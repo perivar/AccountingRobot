@@ -82,6 +82,5 @@ namespace AccountingRobot
 
             return skandiabankenTransactions;
         }
-
     }
 }

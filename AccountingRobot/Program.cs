@@ -7,18 +7,21 @@ namespace AccountingRobot
     {
         static void Main(string[] args)
         {
+            /*
             var oberloOrders = Oberlo.ReadOrders(@"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\Oberlo Orders 2017-01-01-2017-12-04.xlsx");
             foreach (var oberloOrder in oberloOrders)
             {
                 Console.WriteLine("{0}", oberloOrder);
             }
+            */
 
             var skandiabankenTransactions = Skandiabanken.ReadTransactions(@"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\97132735232_2017_01_01-2017_12_10.xlsx");
             foreach (var skandiabankenTransaction in skandiabankenTransactions)
             {
-                Console.WriteLine("{0}", skandiabankenTransaction);
+                Console.WriteLine("{0}", skandiabankenTransaction.GuessAccountType());
             }
 
+            /*
             var aliExpressOrders = AliExpress.ReadOrders(@"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\AliExpressOrders-2017-12-10_00-59.csv");
             foreach (var aliExpressOrder in aliExpressOrders)
             {
@@ -35,6 +38,7 @@ namespace AccountingRobot
             {
                 Console.WriteLine(order);
             }
+            */
 
             Console.ReadLine();
         }
