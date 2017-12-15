@@ -123,6 +123,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AccountingItem.cs" />
     <Compile Include="AliExpress.cs" />
     <Compile Include="AliExpressOrder.cs" />
     <Compile Include="FastExcelUtils.cs" />

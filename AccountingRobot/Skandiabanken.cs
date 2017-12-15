@@ -76,6 +76,15 @@ namespace AccountingRobot
                     skandiabankenTransaction.InAccount = inAccount;
                     skandiabankenTransaction.AccountChange = accountChange;
 
+                    if (accountChange > 0)
+                    {
+                        skandiabankenTransaction.AccountingType = SkandiabankenTransaction.AccountingTypeEnum.IncomeUnknown;
+                    }
+                    else
+                    {
+                        skandiabankenTransaction.AccountingType = SkandiabankenTransaction.AccountingTypeEnum.CostUnknown;
+                    }
+
                     skandiabankenTransactions.Add(skandiabankenTransaction);
                 }
             }

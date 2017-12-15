@@ -21,13 +21,13 @@ namespace AccountingRobot
 
         public override string ToString()
         {
-            return string.Format("{0} {1} {2} {3}", OrderId, OrderTime, OrderAmount.ToString("C", new CultureInfo("en-US")), ContactName);
+            return string.Format("{0} {1:dd.MM.yyyy} {2} {3}", OrderId, OrderTime, OrderAmount.ToString("C", new CultureInfo("en-US")), ContactName);
         }
     }
 
-    public sealed class CsvMap : ClassMap<AliExpressOrder>
+    public sealed class AliExpressCsvMap : ClassMap<AliExpressOrder>
     {
-        public CsvMap()
+        public AliExpressCsvMap()
         {
             Map(m => m.OrderId);
             Map(m => m.OrderTime).TypeConverterOption.Format("HH:mm MMM. dd yyyy");

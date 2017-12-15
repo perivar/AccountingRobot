@@ -1,8 +1,10 @@
-﻿using FastExcel;
+﻿using CsvHelper;
+using FastExcel;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 
 namespace AccountingRobot
 {
@@ -88,6 +90,22 @@ namespace AccountingRobot
             }
 
             return oberloOrders;
+        }
+
+        public static List<OberloOrder> ReadOrdersV2(string oberloOrdersFilePath)
+        {
+            using (TextReader fileReader = File.OpenText(oberloOrdersFilePath))
+            {
+                using (var csvReader = new CsvReader(fileReader))
+                {
+                    csvReader.Configuration.Delimiter = ",";
+                    csvReader.Configuration.HasHeaderRecord = true;
+                    csvReader.Configuration.CultureInfo = CultureInfo.InvariantCulture;
+                    csvReader.Configuration.RegisterClassMap<OberloCsvMap>();
+
+                    return csvReader.GetRecords<OberloOrder>().ToList<OberloOrder>();
+                }
+            }
         }
     }
 }

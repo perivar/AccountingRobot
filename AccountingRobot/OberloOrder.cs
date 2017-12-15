@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CsvHelper.Configuration;
+using System;
 
 namespace AccountingRobot
 {
@@ -28,4 +29,28 @@ namespace AccountingRobot
             return string.Format("{0} {1:yyyy-MM-dd} {2} {3} {4}", OrderNumber, CreatedDate, AliOrderNumber, SKU, CustomerName);
         }
     }
+
+    public sealed class OberloCsvMap : ClassMap<OberloOrder>
+    {
+        public OberloCsvMap()
+        {
+            Map(m => m.OrderNumber);
+            Map(m => m.CreatedDate).TypeConverterOption.Format("dd.MM.yyyy HH.mm.ss");
+            Map(m => m.FinancialStatus);
+            Map(m => m.FulfillmentStatus);
+            Map(m => m.Supplier);
+            Map(m => m.SKU);
+            Map(m => m.ProductName);
+            Map(m => m.Variant);
+            Map(m => m.Quantity);
+            Map(m => m.AliOrderNumber);
+            Map(m => m.CustomerName);
+            Map(m => m.CustomerAddress);
+            Map(m => m.CustomerAddress2);
+            Map(m => m.CustomerCity);
+            Map(m => m.CustomerZip);
+        }
+    }
+
+
 }

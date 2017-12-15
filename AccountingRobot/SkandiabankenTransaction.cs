@@ -13,12 +13,19 @@ namespace AccountingRobot
         public enum AccountingTypeEnum
         {
             CostOfGoods,
-            CostForReselling,
             CostOfAdvertising,
             CostOfWebShop,
             CostOfDomain,
             CostOfServer,
-            TransferIncome
+            CostOfBank,
+            CostOfInvoice,
+            CostUnknown,
+            TransferStripe,
+            TransferPaypal,
+            TransferUnknown,
+            IncomeUnknown,
+            IncomeReturn,
+            IncomeInterest
         };
 
         private static Regex purchasePattern = new Regex(@"(\*0463)\s(\d+\.\d+)\s(\w+)\s(\d+\.\d+)\s([\w\.\*\s]+)\s(Kurs\:)\s(\d+\.\d+)", RegexOptions.Compiled);
@@ -27,34 +34,144 @@ namespace AccountingRobot
         public DateTime TransactionDate { get; set; }
         public DateTime InterestDate { get; set; }
         public long ArchiveReference { get; set; }
-        public string Type { get; set; }
+        public string Type { get; set; } // Overføring (intern), Overførsel (ekstern), Visa, Avgift
         public string Text { get; set; }
         public decimal OutAccount { get; set; }
         public decimal InAccount { get; set; }
         public decimal AccountChange { get; set; }
+
+        // estimated fields based on content
         public AccountingTypeEnum AccountingType { get; set; }
+        public DateTime ExternalPurchaseDate { get; set; }
+        public decimal ExternalPurchaseAmount { get; set; }
+        public string ExternalPurchaseCurrency { get; set; }
+        public string ExternalPurchaseVendor { get; set; }
+        public decimal ExternalPurchaseExchangeRate { get; set; }
 
         public override string ToString()
         {
-            return string.Format("{0:yyyy-MM-dd} {1:yyyy-MM-dd} {2} {3} {4} {5:C}", TransactionDate, InterestDate, ArchiveReference, Type, Text, AccountChange);
+            string tmpString = "";
+            switch (this.AccountingType)
+            {
+                case AccountingTypeEnum.CostOfGoods:
+                case AccountingTypeEnum.CostOfAdvertising:
+                case AccountingTypeEnum.CostOfWebShop:
+                case AccountingTypeEnum.CostOfDomain:
+                case AccountingTypeEnum.CostOfServer:
+                    tmpString = string.Format("{0:dd.MM.yyyy} {1} {2} {3:dd.MM} {4} {5} {6} {7:C}", TransactionDate, GetAccountingTypeString(), ArchiveReference, ExternalPurchaseDate, ExternalPurchaseVendor, ExternalPurchaseAmount, ExternalPurchaseCurrency, AccountChange);
+                    break;
+                case AccountingTypeEnum.TransferPaypal:
+                case AccountingTypeEnum.TransferStripe:
+                    tmpString = string.Format("{0:dd.MM.yyyy} {1} {2} {3:dd.MM} {4} {5:C}", TransactionDate, GetAccountingTypeString(), ArchiveReference, ExternalPurchaseDate, ExternalPurchaseVendor, AccountChange);
+                    break;
+                case AccountingTypeEnum.TransferUnknown:
+                case AccountingTypeEnum.IncomeReturn:
+                case AccountingTypeEnum.IncomeInterest:
+                case AccountingTypeEnum.IncomeUnknown:
+                case AccountingTypeEnum.CostOfBank:
+                case AccountingTypeEnum.CostOfInvoice:
+                case AccountingTypeEnum.CostUnknown:
+                    tmpString = string.Format("{0:dd.MM.yyyy} {1} {2} {3} {4} {5:C}", TransactionDate, GetAccountingTypeString(), ArchiveReference, Type, Text, AccountChange);
+                    break;
+            }
+
+            return tmpString;
         }
 
-        public string GuessAccountType()
+        public string GetAccountingTypeString()
         {
+            var accountingTypeString = "";
+            switch (this.AccountingType)
+            {
+                case AccountingTypeEnum.CostOfGoods:
+                    accountingTypeString = "KOST VARE";
+                    break;
+                case AccountingTypeEnum.CostOfAdvertising:
+                    accountingTypeString = "KOST REKLAME";
+                    break;
+                case AccountingTypeEnum.CostOfWebShop:
+                    accountingTypeString = "KOST NETTBUTIKK";
+                    break;
+                case AccountingTypeEnum.CostOfDomain:
+                    accountingTypeString = "KOST DOMENE";
+                    break;
+                case AccountingTypeEnum.CostOfServer:
+                    accountingTypeString = "KOST SERVER";
+                    break;
+                case AccountingTypeEnum.CostOfBank:
+                    accountingTypeString = "KOST AVGIFT";
+                    break;
+                case AccountingTypeEnum.CostOfInvoice:
+                    accountingTypeString = "KOST GIRO";
+                    break;
+                case AccountingTypeEnum.CostUnknown:
+                    accountingTypeString = "KOST UKJENT";
+                    break;
+                case AccountingTypeEnum.TransferPaypal:
+                    accountingTypeString = "OVERFØRSEL PAYPAL";
+                    break;
+                case AccountingTypeEnum.TransferStripe:
+                    accountingTypeString = "OVERFØRSEL STRIPE";
+                    break;
+                case AccountingTypeEnum.TransferUnknown:
+                    accountingTypeString = "OVERFØRSEL UKJENT";
+                    break;
+                case AccountingTypeEnum.IncomeReturn:
+                    accountingTypeString = "INNTEKT RETUR";
+                    break;
+                case AccountingTypeEnum.IncomeInterest:
+                    accountingTypeString = "INNTEKT RENTER";
+                    break;
+                case AccountingTypeEnum.IncomeUnknown:
+                    accountingTypeString = "INNTEKT UKJENT";
+                    break;
+            }
+
+            return accountingTypeString;
+        }
+
+        public void ExtractAccountingInformation()
+        {
+            // good regexp tester   
             // https://regex101.com/
+
+            if (Type.Equals("Kreditrente"))
+            {
+                this.AccountingType = AccountingTypeEnum.IncomeInterest;
+                return;
+            }
+            else if (Type.Equals("Avgift"))
+            {
+                this.AccountingType = AccountingTypeEnum.CostOfBank;
+                return;
+            }
+            else if (Type.Equals("Giro m/KID"))
+            {
+                this.AccountingType = AccountingTypeEnum.CostOfInvoice;
+                return;
+            }
+
+            // check if the text is a purchase
             var matchPurchase = purchasePattern.Match(Text);
             if (matchPurchase.Success)
             {
-                var dayAndMonth = matchPurchase.Groups[2];
-                var currency = matchPurchase.Groups[3];
-                var amount = matchPurchase.Groups[4];
+                var dayAndMonth = matchPurchase.Groups[2].ToString();
+                var currency = matchPurchase.Groups[3].ToString();
+                var amount = matchPurchase.Groups[4].ToString();
                 var vendor = matchPurchase.Groups[5].ToString();
-                var exchangeRate = matchPurchase.Groups[7];
+                var exchangeRate = matchPurchase.Groups[7].ToString();
 
                 // fix date
-                int year = DateTime.Now.Year;
+                int year = TransactionDate.Year;
                 var dateString = string.Format("{0}.{1}", dayAndMonth, year);
-                DateTime date = DateTime.ParseExact(dateString, "dd.MM.yyyy", CultureInfo.InvariantCulture);
+                DateTime purchaseDate = DateTime.ParseExact(dateString, "dd.MM.yyyy", CultureInfo.InvariantCulture);
+
+                // store properies
+                ExternalPurchaseDate = purchaseDate;
+                ExternalPurchaseAmount = FastExcelUtils.GetDecimalFromExcelCurrencyString(amount);
+                ExternalPurchaseCurrency = currency;
+                ExternalPurchaseVendor = vendor;
+                ExternalPurchaseExchangeRate = FastExcelUtils.GetDecimalFromExcelCurrencyString(exchangeRate);
 
                 if (vendor.CaseInsensitiveContains("Wazalo")
                     || vendor.CaseInsensitiveContains("Shopifycomc"))
@@ -73,93 +190,61 @@ namespace AccountingRobot
                 {
                     this.AccountingType = AccountingTypeEnum.CostOfServer;
                 }
+                else if (vendor.CaseInsensitiveContains("AliExpress"))
+                {
+                    this.AccountingType = AccountingTypeEnum.CostOfGoods;
+                }
                 else
                 {
-                    // this could be both CostForReselling and CostOfGoods
-                    this.AccountingType = AccountingTypeEnum.CostForReselling;
+                    this.AccountingType = AccountingTypeEnum.CostUnknown;
                 }
-                return string.Format("{0} {1:dd.MM.yyyy} {2} {3} {4} {5} {6:c}", GetAccountingTypeString(), date, currency, amount, vendor, exchangeRate, AccountChange);
+
+                if (AccountChange >= 0)
+                {
+                    // not a purchase, but a return
+                    this.AccountingType = AccountingTypeEnum.IncomeReturn;
+                }
+                return;
             }
 
+            // if not a purchase, check if it is a transfer
             var matchTransfer = transferPattern.Match(Text);
             if (matchTransfer.Success)
             {
-                this.AccountingType = AccountingTypeEnum.TransferIncome;
-                var vendor = matchTransfer.Groups[1];
-                var date = matchTransfer.Groups[2];
-                return string.Format("{0} {1} {2} {3:c}", GetAccountingTypeString(), vendor, date, AccountChange);
+                var vendor = matchTransfer.Groups[1].Value.ToString();
+                var date = matchTransfer.Groups[2].Value.ToString();
+
+                // fix date
+                DateTime purchaseDate = DateTime.ParseExact(date, "dd.MM.yy", CultureInfo.InvariantCulture);
+
+                // store properties
+                ExternalPurchaseDate = purchaseDate;
+                ExternalPurchaseVendor = vendor;
+
+                if (vendor.CaseInsensitiveContains("The Currency Cloud"))
+                {
+                    this.AccountingType = AccountingTypeEnum.TransferStripe;
+                }
+                else if (vendor.CaseInsensitiveContains("Paypal Pte Ltd"))
+                {
+                    this.AccountingType = AccountingTypeEnum.TransferPaypal;
+                }
+                else
+                {
+                    this.AccountingType = AccountingTypeEnum.TransferUnknown;
+                }
+                return;
             }
 
-            /*
-            if (Text.CaseInsensitiveContains("Aliexpress"))
-            {
-                // *0463 06.12 Usd 20.87 Www.Aliexpress.Com Kurs: 8.4686
-            }
-            else if (Text.CaseInsensitiveContains("The Currency Cloud"))
-            {
-                // Fra: The Currency Cloud Ltd Betalt: 08.12.17
-            }
-            else if (Text.CaseInsensitiveContains("Paypal Pte Ltd"))
-            {
-                // Fra: Boa Re Paypal Pte Ltd Betalt: 01.12.17
-            }
-            else if (Text.CaseInsensitiveContains("Gandi Net"))
-            {
-                // *0463 04.12 Nok 143.38 Gandi Net Kurs: 1.0000
-            }
-            else if (Text.CaseInsensitiveContains("Scaleway"))
-            {
-                // *0463 01.12 Eur 2.99 Scaleway Kurs: 10.1271
-            }
-            else if (Text.CaseInsensitiveContains("Facebk"))
-            {
-                // *0463 01.12 Nok 261.80 Facebk* Eg68leazj2 Kurs: 1.0000
-                // *0463 31.10 Usd 18.67 Facebk C9gfde2hd2 Kurs: 8.3674
-            }
-            else if (Text.CaseInsensitiveContains("Shopifycomc"))
-            {
-                // *0463 14.11 Usd 80.08 41228928 Shopifycomc Kurs: 8.4366
-            }
-            */
-
+            // if neither match for purchase or transfer
             if (AccountChange > 0)
             {
-                return string.Format("OVERFØRSEL {0} {1:c}", Text, AccountChange);
-            } else
-            {
-                return string.Format("KJØP {0} {1:c}", Text, AccountChange);
+                this.AccountingType = AccountingTypeEnum.IncomeUnknown;
             }
-        }
-
-        private string GetAccountingTypeString()
-        {
-            var accountingTypeString = "";
-            switch (this.AccountingType)
+            else
             {
-                case AccountingTypeEnum.CostOfGoods:
-                    accountingTypeString = "VAREKOSTNAD";
-                    break;
-                case AccountingTypeEnum.CostForReselling:
-                    accountingTypeString = "FORBRUK FOR VIDERESALG";
-                    break;
-                case AccountingTypeEnum.CostOfAdvertising:
-                    accountingTypeString = "REKLAME KOSTNADER";
-                    break;
-                case AccountingTypeEnum.CostOfWebShop:
-                    accountingTypeString = "NETTBUTIKK KOSTNADER";
-                    break;
-                case AccountingTypeEnum.CostOfDomain:
-                    accountingTypeString = "DOMENE KOSTNADER";
-                    break;
-                case AccountingTypeEnum.CostOfServer:
-                    accountingTypeString = "SERVER KOSTNADER";
-                    break;
-                case AccountingTypeEnum.TransferIncome:
-                    accountingTypeString = "OVERFØRSEL";
-                    break;
+                this.AccountingType = AccountingTypeEnum.CostUnknown;
             }
-
-            return accountingTypeString;
         }
     }
 }
