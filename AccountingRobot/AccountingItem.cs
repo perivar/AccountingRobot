@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,14 +14,18 @@ namespace AccountingRobot
         public DateTime Date { get; set; }
 
         public int Number { get; set; }
+        public long ArchiveReference { get; set; }
+        public string Type { get; set; } // Overføring (intern), Overførsel (ekstern), Visa, Avgift
+        public string AccountingType { get; set; }
         public string Text { get; set; }
+
         public string Gateway { get; set; }
 
         public string NumSale { get; set; }
         public string NumPurchase { get; set; }
 
-        public decimal PurchaseUSD { get; set; }
-        public decimal AmountNOK { get; set; }
+        public decimal PurchaseOtherCurrency { get; set; }
+        public string OtherCurrency { get; set; }
 
         public decimal AccountPaypal { get; set; }
         public decimal AccountStripe { get; set; }
@@ -30,7 +35,7 @@ namespace AccountingRobot
         public decimal VATSales { get; set; }
 
         public decimal SalesVAT { get; set; }
-        public decimal SalesExlVAT { get; set; }
+        public decimal SalesVATExempt { get; set; }
 
         public decimal CostOfGoods { get; set; }
         public decimal CostForReselling { get; set; }
@@ -52,14 +57,19 @@ namespace AccountingRobot
         public AccountingItemCsvMap()
         {
             Map(m => m.Periode);
-            Map(m => m.Date).TypeConverterOption.Format("dd.MM.yyyy");
+            Map(m => m.Date).TypeConverterOption.Format("yyyy.MM.dd");
+
             Map(m => m.Number);
+            Map(m => m.ArchiveReference);
+            Map(m => m.Type);
+            Map(m => m.AccountingType);
             Map(m => m.Text);
+
             Map(m => m.Gateway);
             Map(m => m.NumSale);
             Map(m => m.NumPurchase);
-            Map(m => m.PurchaseUSD);
-            Map(m => m.AmountNOK);
+            Map(m => m.PurchaseOtherCurrency);
+            Map(m => m.OtherCurrency);
 
             Map(m => m.AccountPaypal);
             Map(m => m.AccountStripe);
@@ -68,8 +78,8 @@ namespace AccountingRobot
             Map(m => m.VATPurchase);
             Map(m => m.VATSales);
 
-            Map(m => m.SalesVAT); 
-            Map(m => m.SalesExlVAT);
+            Map(m => m.SalesVAT);
+            Map(m => m.SalesVATExempt);
 
             Map(m => m.CostOfGoods);
             Map(m => m.CostForReselling);
@@ -77,6 +87,6 @@ namespace AccountingRobot
             Map(m => m.CostOfPhoneInternet);
             Map(m => m.CostOfAdvertising);
             Map(m => m.CostOfOther);
+        }
     }
-}
 }

@@ -19,12 +19,29 @@ namespace AccountingRobot
             var fileName = string.Format("Accounting {0:yyyy-MM-dd}.csv", now);
             using (var sw = new StreamWriter(fileName))
             {
-                var csvWriter = new CsvWriter(sw);
-                csvWriter.Configuration.Delimiter = ",";
-                csvWriter.Configuration.HasHeaderRecord = true;
-                csvWriter.Configuration.CultureInfo = CultureInfo.InvariantCulture;
-                csvWriter.Configuration.RegisterClassMap<AccountingItemCsvMap>();
-                csvWriter.WriteRecords(accountingItems);
+                sw.Write("sep=,\n");
+                using (var csvWriter = new CsvWriter(sw))
+                {
+                    csvWriter.Configuration.Delimiter = ",";
+                    csvWriter.Configuration.HasHeaderRecord = true;
+                    csvWriter.Configuration.CultureInfo = new CultureInfo("no-No");
+                    csvWriter.Configuration.RegisterClassMap<AccountingItemCsvMap>();
+
+                    // write all
+                    //csvWriter.WriteRecords(accountingItems);
+
+                    // write header
+                    csvWriter.WriteHeader<AccountingItem>();
+                    csvWriter.NextRecord();
+
+                    // write each record
+                    foreach (var accountingItem in accountingItems)
+                    {
+                        csvWriter.WriteRecord<AccountingItem>(accountingItem);
+                        csvWriter.NextRecord();
+                    }
+                }
+
             }
             /*
             // get paypal configuration parameters
@@ -108,22 +125,55 @@ namespace AccountingRobot
             // and map each one to the right meta information
             foreach (var skandiabankenTransaction in skandiabankenTransactions)
             {
+                // define accounting item
                 var accountingItem = new AccountingItem();
+                accountingItem.Date = skandiabankenTransaction.TransactionDate;
+                accountingItem.ArchiveReference = skandiabankenTransaction.ArchiveReference;
+                accountingItem.Type = skandiabankenTransaction.Type;
 
                 // extract properties from the transaction text
                 skandiabankenTransaction.ExtractAccountingInformation();
                 var accountingType = skandiabankenTransaction.AccountingType;
+                accountingItem.AccountingType = skandiabankenTransaction.GetAccountingTypeString();
+
+                // 1. If purchase or return from purchase 
+                if (skandiabankenTransaction.Type.Equals("Visa") && (
+                    accountingType == SkandiabankenTransaction.AccountingTypeEnum.CostOfWebShop ||
+                    accountingType == SkandiabankenTransaction.AccountingTypeEnum.CostOfAdvertising ||
+                    accountingType == SkandiabankenTransaction.AccountingTypeEnum.CostOfDomain ||
+                    accountingType == SkandiabankenTransaction.AccountingTypeEnum.CostOfServer ||
+                    accountingType == SkandiabankenTransaction.AccountingTypeEnum.IncomeReturn))
+                {
+
+                    Console.WriteLine("{0}", skandiabankenTransaction);
+                    accountingItem.Text = string.Format("{0:dd.MM.yyyy} {1} {2} {3} (Kurs: {4})", skandiabankenTransaction.ExternalPurchaseDate, skandiabankenTransaction.ExternalPurchaseVendor, skandiabankenTransaction.ExternalPurchaseAmount, skandiabankenTransaction.ExternalPurchaseCurrency, skandiabankenTransaction.ExternalPurchaseExchangeRate);
+                    accountingItem.PurchaseOtherCurrency = skandiabankenTransaction.ExternalPurchaseAmount;
+                    accountingItem.OtherCurrency = skandiabankenTransaction.ExternalPurchaseCurrency;
+                    accountingItem.AccountBank = skandiabankenTransaction.AccountChange;
+
+                    switch (accountingType)
+                    {
+                        case SkandiabankenTransaction.AccountingTypeEnum.CostOfWebShop:
+                        case SkandiabankenTransaction.AccountingTypeEnum.CostOfDomain:
+                        case SkandiabankenTransaction.AccountingTypeEnum.CostOfServer:
+                            accountingItem.CostOfData = -skandiabankenTransaction.AccountChange;
+                            break;
+                        case SkandiabankenTransaction.AccountingTypeEnum.CostOfAdvertising:
+                            accountingItem.CostOfAdvertising = -skandiabankenTransaction.AccountChange;
+                            break;
+                    }
+                }
 
                 // 1. If AliExpress purchase
-                if (accountingType == SkandiabankenTransaction.AccountingTypeEnum.CostOfGoods)
+                else if (skandiabankenTransaction.Type.Equals("Visa") &&
+                    accountingType == SkandiabankenTransaction.AccountingTypeEnum.CostOfGoods)
                 {
                     Console.WriteLine("{0}", skandiabankenTransaction);
-                    accountingItem.Date = skandiabankenTransaction.TransactionDate;
-                    accountingItem.Text = string.Format("{0} {1:dd.MM} {2} {3} {4}", skandiabankenTransaction.GetAccountingTypeString(), skandiabankenTransaction.ExternalPurchaseDate, skandiabankenTransaction.ExternalPurchaseVendor, skandiabankenTransaction.ExternalPurchaseAmount, skandiabankenTransaction.ExternalPurchaseCurrency);
-                    accountingItem.NumPurchase = "";
-                    accountingItem.PurchaseUSD = skandiabankenTransaction.ExternalPurchaseAmount;
+                    accountingItem.Text = string.Format("{0:dd.MM.yyyy} {1} {2} {3} (Kurs: {4})", skandiabankenTransaction.ExternalPurchaseDate, skandiabankenTransaction.ExternalPurchaseVendor, skandiabankenTransaction.ExternalPurchaseAmount, skandiabankenTransaction.ExternalPurchaseCurrency, skandiabankenTransaction.ExternalPurchaseExchangeRate);
+                    accountingItem.PurchaseOtherCurrency = skandiabankenTransaction.ExternalPurchaseAmount;
+                    accountingItem.OtherCurrency = skandiabankenTransaction.ExternalPurchaseCurrency;
                     accountingItem.AccountBank = skandiabankenTransaction.AccountChange;
-                    accountingItem.CostOfGoods = -skandiabankenTransaction.AccountChange;
+                    accountingItem.CostForReselling = -skandiabankenTransaction.AccountChange;
 
                     // lookup in AliExpress purchase list
                     // matching ordertime and orderamount
@@ -135,13 +185,14 @@ namespace AccountingRobot
                         orderby order.OrderTime ascending
                         select order;
 
+                    // if the count is more than one, we cannot match easily 
                     if (aliExpressQuery.Count() > 1)
                     {
                         string aliexOrders = String.Join("\n\t", aliExpressQuery.Select(o => o.ToString()));
                         Console.WriteLine("\tERROR: MUST CHOOSE ONE OF MULTIPLE:\n\t{0}", aliexOrders);
 
                         // flatten the aliexpress order list
-                        var aliExpressOrderList = aliExpressQuery.SelectMany(a => a.Children.ToList()).ToList();
+                        var aliExpressOrderList = aliExpressQuery.SelectMany(a => a.Children).ToList();
 
                         // join the aliexpress list and the oberlo list on aliexpress order number
                         var joined = from a in aliExpressOrderList
@@ -153,40 +204,40 @@ namespace AccountingRobot
                         {
                             // found shopify order numbers
                             Console.WriteLine("\tFOUND SHOPIFY ORDERS:");
-                            foreach (var join in joined)
-                            {
-                                Console.WriteLine("\t{0} {1}", join.Oberlo, join.AliExpress);
-                                accountingItem.Text += string.Format(" {0},", join.Oberlo.OrderNumber);
-                                accountingItem.NumPurchase += string.Format("{0}, ", join.Oberlo.OrderNumber);
-                            }
-                        } else
+
+                            // join the ordernumbers into a string
+                            var orderNumbers = string.Join(", ", joined.Select(c => c.Oberlo).Select(d => d.OrderNumber).Distinct());
+                            if (orderNumbers.Equals("")) orderNumbers = "NOT FOUND";
+                            Console.WriteLine("\t{0}", orderNumbers);
+                            accountingItem.NumPurchase = orderNumbers;
+                        }
+                        else
                         {
                             // could not find shopify order numbers
                             Console.WriteLine("\tERROR: NO SHOPIFY ORDERS FOUND!");
                         }
                     }
+                    // one to one match
                     else if (aliExpressQuery.Count() == 1)
                     {
                         Console.WriteLine("\tOK: FOUND SINGLE: {0}", aliExpressQuery.First());
 
                         // join order ids and make sure they are strings
-                        var idsLong = aliExpressQuery.SelectMany(a => a.Children.ToList().Select(b => b.OrderId)).ToList();
-                        var idsString = idsLong.ConvertAll<string>(x => x.ToString());
+                        var ids = aliExpressQuery.SelectMany(a => a.Children).Select(b => b.OrderId.ToString()).ToList();
 
                         // lookup in oberlo to find shopify order number
                         var oberloQuery =
                             from order in oberloOrders
                             where
-                            idsString.Contains(order.AliOrderNumber)
+                            ids.Contains(order.AliOrderNumber)
                             orderby order.CreatedDate ascending
                             select order;
 
-                        foreach (var oberlo in oberloQuery)
-                        {
-                            Console.WriteLine("\t{0}", oberlo);
-                            accountingItem.Text += string.Format(" {0},", oberlo.OrderNumber);
-                            accountingItem.NumPurchase += string.Format("{0}, ", oberlo.OrderNumber);
-                        }
+                        // join the ordernumbers into a string
+                        var orderNumbers = string.Join(", ", oberloQuery.Select(c => c.OrderNumber).Distinct());
+                        if (orderNumbers.Equals("")) orderNumbers = "NOT FOUND";
+                        Console.WriteLine("\t{0}", orderNumbers);
+                        accountingItem.NumPurchase = orderNumbers;
                     }
                     else
                     {
@@ -198,10 +249,7 @@ namespace AccountingRobot
                 else if (accountingType == SkandiabankenTransaction.AccountingTypeEnum.TransferPaypal)
                 {
                     Console.WriteLine("{0}", skandiabankenTransaction);
-
-                    accountingItem.Date = skandiabankenTransaction.TransactionDate;
-                    accountingItem.Text = string.Format("{0} {1:dd.MM} {2}", skandiabankenTransaction.GetAccountingTypeString(), skandiabankenTransaction.ExternalPurchaseDate, skandiabankenTransaction.ExternalPurchaseVendor);
-                    accountingItem.AmountNOK = 0; // what it was before the fees?
+                    accountingItem.Text = string.Format("{0:dd.MM.yyyy} {1}", skandiabankenTransaction.ExternalPurchaseDate, skandiabankenTransaction.ExternalPurchaseVendor);
                     accountingItem.Gateway = "paypal";
 
                     accountingItem.AccountPaypal = -skandiabankenTransaction.AccountChange;
@@ -212,10 +260,7 @@ namespace AccountingRobot
                 else if (accountingType == SkandiabankenTransaction.AccountingTypeEnum.TransferStripe)
                 {
                     Console.WriteLine("{0}", skandiabankenTransaction);
-
-                    accountingItem.Date = skandiabankenTransaction.TransactionDate;
-                    accountingItem.Text = string.Format("{0} {1:dd.MM} {2}", skandiabankenTransaction.GetAccountingTypeString(), skandiabankenTransaction.ExternalPurchaseDate, skandiabankenTransaction.ExternalPurchaseVendor);
-                    accountingItem.AmountNOK = 0; // what it was before the fees?
+                    accountingItem.Text = string.Format("{0:dd.MM.yyyy} {1}", skandiabankenTransaction.ExternalPurchaseDate, skandiabankenTransaction.ExternalPurchaseVendor);
                     accountingItem.Gateway = "stripe";
 
                     accountingItem.AccountStripe = -skandiabankenTransaction.AccountChange;
@@ -226,10 +271,23 @@ namespace AccountingRobot
                 else
                 {
                     Console.WriteLine("{0}", skandiabankenTransaction);
-
-                    accountingItem.Date = skandiabankenTransaction.TransactionDate;
-                    accountingItem.Text = string.Format("{0} {1} {2} {3}", skandiabankenTransaction.GetAccountingTypeString(), skandiabankenTransaction.ArchiveReference, skandiabankenTransaction.Type, skandiabankenTransaction.Text);
+                    accountingItem.Text = string.Format("{0}", skandiabankenTransaction.Text);
                     accountingItem.AccountBank = skandiabankenTransaction.AccountChange;
+
+                    switch (accountingType)
+                    {
+                        case SkandiabankenTransaction.AccountingTypeEnum.CostOfWebShop:
+                        case SkandiabankenTransaction.AccountingTypeEnum.CostOfDomain:
+                        case SkandiabankenTransaction.AccountingTypeEnum.CostOfServer:
+                            accountingItem.CostOfData = -skandiabankenTransaction.AccountChange;
+                            break;
+                        case SkandiabankenTransaction.AccountingTypeEnum.CostOfAdvertising:
+                            accountingItem.CostOfAdvertising = -skandiabankenTransaction.AccountChange;
+                            break;
+                        case SkandiabankenTransaction.AccountingTypeEnum.CostOfTryouts:
+                            accountingItem.CostOfGoods = -skandiabankenTransaction.AccountChange;
+                            break;
+                    }
                 }
 
                 accountingList.Add(accountingItem);

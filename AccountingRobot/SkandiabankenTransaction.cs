@@ -19,6 +19,7 @@ namespace AccountingRobot
             CostOfServer,
             CostOfBank,
             CostOfInvoice,
+            CostOfTryouts,
             CostUnknown,
             TransferStripe,
             TransferPaypal,
@@ -70,6 +71,7 @@ namespace AccountingRobot
                 case AccountingTypeEnum.IncomeUnknown:
                 case AccountingTypeEnum.CostOfBank:
                 case AccountingTypeEnum.CostOfInvoice:
+                case AccountingTypeEnum.CostOfTryouts:
                 case AccountingTypeEnum.CostUnknown:
                     tmpString = string.Format("{0:dd.MM.yyyy} {1} {2} {3} {4} {5:C}", TransactionDate, GetAccountingTypeString(), ArchiveReference, Type, Text, AccountChange);
                     break;
@@ -104,6 +106,9 @@ namespace AccountingRobot
                 case AccountingTypeEnum.CostOfInvoice:
                     accountingTypeString = "KOST GIRO";
                     break;
+                case AccountingTypeEnum.CostOfTryouts:
+                    accountingTypeString = "KOST PRØVE";
+                    break;                    
                 case AccountingTypeEnum.CostUnknown:
                     accountingTypeString = "KOST UKJENT";
                     break;
@@ -243,7 +248,18 @@ namespace AccountingRobot
             }
             else
             {
-                this.AccountingType = AccountingTypeEnum.CostUnknown;
+                if (Text.CaseInsensitiveContains("Gandi"))
+                {
+                    this.AccountingType = AccountingTypeEnum.CostOfDomain;
+                }
+                else if (Text.CaseInsensitiveContains("Prøvekjøp"))
+                {
+                    this.AccountingType = AccountingTypeEnum.CostOfTryouts;
+                }
+                else
+                {
+                    this.AccountingType = AccountingTypeEnum.CostUnknown;
+                }
             }
         }
     }
