@@ -13,7 +13,10 @@ namespace AccountingRobot
     {
         static void Main(string[] args)
         {
-            var accountingItems = ProcessAll();
+
+            var accountingItems = ProcessShopifyStatement();
+            //var accountingItems = ProcessBankAccountStatement();
+
             accountingItems.Reverse();
             var now = DateTime.Now;
             var fileName = string.Format("Accounting {0:yyyy-MM-dd}.csv", now);
@@ -43,6 +46,7 @@ namespace AccountingRobot
                 }
 
             }
+
             /*
             // get paypal configuration parameters
             string payPalApiUsername = ConfigurationManager.AppSettings["PayPalApiUsername"];
@@ -89,22 +93,12 @@ namespace AccountingRobot
                 Console.WriteLine("{0}", aliExpressOrder);
             }
 
-            // get shopify configuration parameters
-            string shopifyDomain = ConfigurationManager.AppSettings["ShopifyDomain"];
-            string shopifyAPIKey = ConfigurationManager.AppSettings["ShopifyAPIKey"];
-            string shopifyAPIPassword = ConfigurationManager.AppSettings["ShopifyAPIPassword"];
-
-            var shopifyOrders = Shopify.ReadShopifyOrders(shopifyDomain, shopifyAPIKey, shopifyAPIPassword);
-            foreach (var order in shopifyOrders)
-            {
-                Console.WriteLine(order);
-            }
             */
 
             Console.ReadLine();
         }
 
-        static List<AccountingItem> ProcessAll()
+        static List<AccountingItem> ProcessBankAccountStatement()
         {
             var accountingList = new List<AccountingItem>();
 
@@ -148,7 +142,7 @@ namespace AccountingRobot
                     Console.WriteLine("{0}", skandiabankenTransaction);
                     accountingItem.Text = string.Format("{0:dd.MM.yyyy} {1} {2} {3} (Kurs: {4})", skandiabankenTransaction.ExternalPurchaseDate, skandiabankenTransaction.ExternalPurchaseVendor, skandiabankenTransaction.ExternalPurchaseAmount, skandiabankenTransaction.ExternalPurchaseCurrency, skandiabankenTransaction.ExternalPurchaseExchangeRate);
                     accountingItem.PurchaseOtherCurrency = skandiabankenTransaction.ExternalPurchaseAmount;
-                    accountingItem.OtherCurrency = skandiabankenTransaction.ExternalPurchaseCurrency;
+                    accountingItem.OtherCurrency = skandiabankenTransaction.ExternalPurchaseCurrency.ToUpper();
                     accountingItem.AccountBank = skandiabankenTransaction.AccountChange;
 
                     switch (accountingType)
@@ -171,7 +165,7 @@ namespace AccountingRobot
                     Console.WriteLine("{0}", skandiabankenTransaction);
                     accountingItem.Text = string.Format("{0:dd.MM.yyyy} {1} {2} {3} (Kurs: {4})", skandiabankenTransaction.ExternalPurchaseDate, skandiabankenTransaction.ExternalPurchaseVendor, skandiabankenTransaction.ExternalPurchaseAmount, skandiabankenTransaction.ExternalPurchaseCurrency, skandiabankenTransaction.ExternalPurchaseExchangeRate);
                     accountingItem.PurchaseOtherCurrency = skandiabankenTransaction.ExternalPurchaseAmount;
-                    accountingItem.OtherCurrency = skandiabankenTransaction.ExternalPurchaseCurrency;
+                    accountingItem.OtherCurrency = skandiabankenTransaction.ExternalPurchaseCurrency.ToUpper();
                     accountingItem.AccountBank = skandiabankenTransaction.AccountChange;
                     accountingItem.CostForReselling = -skandiabankenTransaction.AccountChange;
 
@@ -292,6 +286,124 @@ namespace AccountingRobot
 
                 accountingList.Add(accountingItem);
             }
+            return accountingList;
+        }
+
+        static List<AccountingItem> ProcessShopifyStatement()
+        {
+            var accountingList = new List<AccountingItem>();
+
+            // prepopulate some lookup lists
+            Console.Out.WriteLine("Prepopulating Lookup Lists ...");
+            // get paypal configuration parameters
+            string payPalApiUsername = ConfigurationManager.AppSettings["PayPalApiUsername"];
+            string payPalApiPassword = ConfigurationManager.AppSettings["PayPalApiPassword"];
+            string payPalApiSignature = ConfigurationManager.AppSettings["PayPalApiSignature"];
+            var paypalTransactions = Paypal.GetTransactions(payPalApiUsername, payPalApiPassword, payPalApiSignature);
+            Console.Out.WriteLine("Successfully read PayPal transactions ...");
+
+            // get stripe configuration parameters
+            string stripeApiKey = ConfigurationManager.AppSettings["StripeApiKey"];
+            var stripeTransactions = Stripe.GetTransactions(stripeApiKey);
+            Console.Out.WriteLine("Successfully read Stripe transactions ...");
+
+            // get shopify configuration parameters
+            string shopifyDomain = ConfigurationManager.AppSettings["ShopifyDomain"];
+            string shopifyAPIKey = ConfigurationManager.AppSettings["ShopifyAPIKey"];
+            string shopifyAPIPassword = ConfigurationManager.AppSettings["ShopifyAPIPassword"];
+
+            var shopifyOrders = Shopify.ReadShopifyOrders(shopifyDomain, shopifyAPIKey, shopifyAPIPassword);
+            Console.Out.WriteLine("Successfully read all Shopify orders ...");
+
+            Console.Out.WriteLine("Processing started ...");
+            foreach (var shopifyOrder in shopifyOrders)
+            {
+                if (shopifyOrder.FinancialStatus.Equals("refunded")
+                    || shopifyOrder.FinancialStatus.Equals("void")
+                    || shopifyOrder.Gateway == "Vipps") continue;
+
+                // define accounting item
+                var accountingItem = new AccountingItem();
+                accountingItem.Date = shopifyOrder.Date;
+                accountingItem.ArchiveReference = shopifyOrder.Id;
+                accountingItem.Type = string.Format("{0} {1}", shopifyOrder.FinancialStatus, shopifyOrder.FulfillmentStatus);
+                accountingItem.AccountingType = "SHOPIFY";
+                accountingItem.Text = string.Format("SALG {0} {1}", shopifyOrder.CustomerName, shopifyOrder.PaymentId);
+                accountingItem.Gateway = shopifyOrder.Gateway;
+                accountingItem.NumSale = shopifyOrder.Name;
+
+                switch (accountingItem.Gateway)
+                {
+                    case "Vipps":
+                        // do nothing
+                        break;
+                    case "stripe":
+
+                        accountingItem.PurchaseOtherCurrency = shopifyOrder.TotalPrice;
+                        accountingItem.OtherCurrency = "NOK";
+
+                        // lookup the stripe transaction
+                        var stripeQuery =
+                        from transaction in stripeTransactions
+                        where
+                        transaction.Type.Equals("charge") &&
+                        transaction.Amount == (int)(shopifyOrder.TotalPrice * 100) &&
+                        transaction.Created.Date == shopifyOrder.Date.Date
+                        orderby transaction.Created ascending
+                        select transaction;
+
+                        if (stripeQuery.Count() > 1)
+                        {
+                            // more than one ?!
+                            Console.Out.WriteLine("ERROR: FOUND MORE THAN ONE!");
+                        }
+                        else if (stripeQuery.Count() > 0)
+                        {
+                            // one match
+                            var stripeTransaction = stripeQuery.First();
+                            decimal amount = (decimal)stripeTransaction.Amount / 100;
+                            decimal net = (decimal)stripeTransaction.Net / 100;
+                            decimal fee = (decimal)stripeTransaction.Fee / 100;
+
+                            accountingItem.FeesStripe = fee;
+                            accountingItem.AccountStripe = net;
+                        }
+                        else
+                        {
+                            Console.Out.WriteLine("ERROR: NONE FOUND!");
+                        }
+
+                        break;
+                    case "paypal":
+                        // 2017-08-30T21:13:37Z
+                        // var date = DateTimeOffset.Parse(paypalTransaction.Timestamp).UtcDateTime;
+
+                        // lookup the paypal transaction
+
+                        accountingItem.AccountPaypal = shopifyOrder.TotalPrice;
+                        break;
+                }
+
+                // fix VAT
+                if (shopifyOrder.TotalTax != 0)
+                {
+                    accountingItem.SalesVAT = -(shopifyOrder.TotalPrice / (decimal)1.25);
+                    accountingItem.VATSales = accountingItem.SalesVAT * (decimal)0.25;
+                }
+                else
+                {
+                    accountingItem.SalesVATExempt = -shopifyOrder.TotalPrice;
+                }
+
+                // check if free gift
+                if (shopifyOrder.TotalPrice == 0)
+                {
+                    accountingItem.AccountingType += " FREE";
+                }
+
+                accountingList.Add(accountingItem);
+            }
+
             return accountingList;
         }
     }

@@ -74,15 +74,27 @@ namespace AccountingRobot
                 {
                     var shopifyOrder = new ShopifyOrder();
                     shopifyOrder.Id = order.id;
+                    shopifyOrder.Date = order.created_at;
                     shopifyOrder.Name = order.name;
                     shopifyOrder.FinancialStatus = order.financial_status;
                     string fulfillmentStatusTmp = order.fulfillment_status;
                     fulfillmentStatusTmp = (fulfillmentStatusTmp == null ? "unfulfilled" : fulfillmentStatusTmp);
                     shopifyOrder.FulfillmentStatus = fulfillmentStatusTmp;
+
                     shopifyOrder.Gateway = order.gateway;
+                    if (null != order.payment_details)
+                    {
+                        shopifyOrder.PaymentId = string.Format("{0} {1}", order.payment_details.credit_card_company, order.payment_details.credit_card_bin);
+                    }
+
                     shopifyOrder.TotalPrice = order.total_price;
                     shopifyOrder.TotalTax = order.total_tax;
+                    shopifyOrder.CustomerEmail = order.contact_email;
                     shopifyOrder.CustomerName = string.Format("{0} {1}", order.customer.first_name, order.customer.last_name);
+                    shopifyOrder.CustomerAddress = order.customer.default_address.address1;
+                    shopifyOrder.CustomerAddress2 = order.customer.default_address.address2;
+                    shopifyOrder.CustomerCity = order.customer.default_address.city;
+                    shopifyOrder.CustomerZipCode = order.customer.default_address.zip;
 
                     shopifyOrders.Add(shopifyOrder);
                 }

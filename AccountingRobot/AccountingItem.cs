@@ -87,6 +87,13 @@ namespace AccountingRobot
             Map(m => m.CostOfPhoneInternet);
             Map(m => m.CostOfAdvertising);
             Map(m => m.CostOfOther);
-        }
+
+            Map(m => m.FeesBank);
+            Map(m => m.FeesPaypal);
+            Map(m => m.FeesStripe);
+
+            Map(m => m.IncomeFinance);
+            Map(m => m.CostOfFinance);
     }
+}
 }
