@@ -96,6 +96,39 @@ namespace AccountingRobot
                     shopifyOrder.CustomerCity = order.customer.default_address.city;
                     shopifyOrder.CustomerZipCode = order.customer.default_address.zip;
 
+                    if (shopifyOrder.Name.Equals("#1002"))
+                    {
+                        // breakpoint here
+                    }
+
+                    if (order.refunds != null)
+                    {
+                        decimal refundSubTotal = 0;
+                        decimal refundTotalTax = 0;
+
+                        // calculate refund
+                        foreach (var refund in order.refunds)
+                        {
+                            var refundItems = refund.refund_line_items;
+                            foreach (var refundItem in refundItems)
+                            {
+                                refundSubTotal += (decimal) refundItem.subtotal;
+                                refundTotalTax += (decimal) refundItem.total_tax;
+                            }
+
+                            var orderAdjustments = refund.order_adjustments;
+                            foreach (var orderAdjustment in orderAdjustments)
+                            {
+                                refundSubTotal += -((decimal) orderAdjustment.amount);
+                                refundTotalTax += -((decimal) orderAdjustment.tax_amount);
+                            }
+                        }
+
+                        // perform refund
+                        shopifyOrder.TotalPrice -= refundSubTotal;
+                        shopifyOrder.TotalTax -= refundTotalTax;
+                    }
+
                     shopifyOrders.Add(shopifyOrder);
                 }
             }

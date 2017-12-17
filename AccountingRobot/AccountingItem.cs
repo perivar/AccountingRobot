@@ -28,30 +28,42 @@ namespace AccountingRobot
         public decimal PurchaseOtherCurrency { get; set; }
         public string OtherCurrency { get; set; }
 
-        public decimal AccountPaypal { get; set; }
-        public decimal AccountStripe { get; set; }
-        public decimal AccountVipps { get; set; }
-        public decimal AccountBank { get; set; }
+        public decimal AccountPaypal { get; set; }  // 1910
+        public decimal AccountStripe { get; set; }  // 1915
+        public decimal AccountVipps { get; set; }   // 1918
+        public decimal AccountBank { get; set; }    // 1920
 
         public decimal VATPurchase { get; set; }
         public decimal VATSales { get; set; }
 
-        public decimal SalesVAT { get; set; }
-        public decimal SalesVATExempt { get; set; }
+        public decimal SalesVAT { get; set; }       // 3000
+        public decimal SalesVATExempt { get; set; } // 3100
 
-        public decimal CostOfGoods { get; set; }
-        public decimal CostForReselling { get; set; }
-        public decimal CostOfData { get; set; }
-        public decimal CostOfPhoneInternet { get; set; }
-        public decimal CostOfAdvertising { get; set; }
-        public decimal CostOfOther { get; set; }
+        public decimal CostOfGoods { get; set; }            // 4005
+        public decimal CostForReselling { get; set; }       // 4300
+        public decimal CostForSalary { get; set; }          // 5000
+        public decimal CostForSalaryTax { get; set; }       // 5400
+        public decimal CostForDepreciation { get; set; }    // 6000
+        public decimal CostForShipping { get; set; }        // 6100
+        public decimal CostForElectricity { get; set; }     // 6340 
+        public decimal CostForToolsInventory { get; set; }      // 6500
+        public decimal CostForMaintenance { get; set; }         // 6695
+        public decimal CostForFacilities { get; set; }          // 6800 
 
-        public decimal FeesBank { get; set; }
-        public decimal FeesPaypal { get; set; }
-        public decimal FeesStripe { get; set; }
+        public decimal CostOfData { get; set; }                 // 6810 
+        public decimal CostOfPhoneInternet { get; set; }        // 6900
+        public decimal CostForTravelAndAllowance { get; set; }  // 7140
+        public decimal CostOfAdvertising { get; set; }          // 7330
+        public decimal CostOfOther { get; set; }                // 7700
 
-        public decimal IncomeFinance { get; set; }
-        public decimal CostOfFinance { get; set; }
+        public decimal FeesBank { get; set; }                   // 7770
+        public decimal FeesPaypal { get; set; }                 // 7780
+        public decimal FeesStripe { get; set; }                 // 7785 
+
+        public decimal CostForEstablishment { get; set; }       // 7790
+
+        public decimal IncomeFinance { get; set; }              // 8099
+        public decimal CostOfFinance { get; set; }              // 8199
     }
 
     public sealed class AccountingItemCsvMap : ClassMap<AccountingItem>
@@ -66,7 +78,7 @@ namespace AccountingRobot
             Map(m => m.Type);
             Map(m => m.AccountingType);
             Map(m => m.Text);
-            Map(m => m.ErrorMessage);            
+            Map(m => m.ErrorMessage);
 
             Map(m => m.Gateway);
             Map(m => m.NumSale);
@@ -76,7 +88,7 @@ namespace AccountingRobot
 
             Map(m => m.AccountPaypal);
             Map(m => m.AccountStripe);
-            Map(m => m.AccountVipps);            
+            Map(m => m.AccountVipps);
             Map(m => m.AccountBank);
 
             Map(m => m.VATPurchase);
@@ -87,8 +99,18 @@ namespace AccountingRobot
 
             Map(m => m.CostOfGoods);
             Map(m => m.CostForReselling);
+            Map(m => m.CostForSalary);
+            Map(m => m.CostForSalaryTax);
+            Map(m => m.CostForDepreciation);
+            Map(m => m.CostForShipping);
+            Map(m => m.CostForElectricity);
+            Map(m => m.CostForToolsInventory);
+            Map(m => m.CostForMaintenance);
+            Map(m => m.CostForFacilities);
+
             Map(m => m.CostOfData);
             Map(m => m.CostOfPhoneInternet);
+            Map(m => m.CostForTravelAndAllowance);
             Map(m => m.CostOfAdvertising);
             Map(m => m.CostOfOther);
 
@@ -96,8 +118,10 @@ namespace AccountingRobot
             Map(m => m.FeesPaypal);
             Map(m => m.FeesStripe);
 
+            Map(m => m.CostForEstablishment);
+
             Map(m => m.IncomeFinance);
             Map(m => m.CostOfFinance);
+        }
     }
-}
 }

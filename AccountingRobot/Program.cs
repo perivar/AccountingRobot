@@ -360,8 +360,10 @@ namespace AccountingRobot
             foreach (var shopifyOrder in shopifyOrders)
             {
                 // || shopifyOrder.Gateway == "Vipps"
+                // skip, not paid (pending), cancelled (voided) and fully refunded orders (refunded)
                 if (shopifyOrder.FinancialStatus.Equals("refunded")
-                    || shopifyOrder.FinancialStatus.Equals("void")) continue;
+                    || shopifyOrder.FinancialStatus.Equals("voided")
+                    || shopifyOrder.FinancialStatus.Equals("pending")) continue;
 
                 // define accounting item
                 var accountingItem = new AccountingItem();
@@ -381,7 +383,7 @@ namespace AccountingRobot
 
                 switch (accountingItem.Gateway)
                 {
-                    case "Vipps":
+                    case "vipps":
                         accountingItem.PurchaseOtherCurrency = shopifyOrder.TotalPrice;
                         accountingItem.OtherCurrency = "NOK";
 
