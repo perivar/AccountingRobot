@@ -92,7 +92,7 @@ namespace AccountingRobot
             return oberloOrders;
         }
 
-        public static List<OberloOrder> ReadOrdersV2(string oberloOrdersFilePath)
+        public static List<OberloOrder> ReadOrdersCSV(string oberloOrdersFilePath)
         {
             using (TextReader fileReader = File.OpenText(oberloOrdersFilePath))
             {

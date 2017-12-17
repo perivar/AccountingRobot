@@ -1,5 +1,4 @@
 ﻿using CsvHelper;
-using CsvHelper.TypeConversion;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -13,11 +12,16 @@ namespace AccountingRobot
     {
         static void Main(string[] args)
         {
+            var accountingShopifyItems = ProcessShopifyStatement();
+            var accountingBankItems = ProcessBankAccountStatement();
 
-            var accountingItems = ProcessShopifyStatement();
-            //var accountingItems = ProcessBankAccountStatement();
+            // merge into one list
+            accountingShopifyItems.AddRange(accountingBankItems);
 
-            accountingItems.Reverse();
+            // and sort (by ascending)
+            var accountingItems = accountingShopifyItems.OrderBy(o => o.Date).ToList();
+
+            // and store in file
             var now = DateTime.Now;
             var fileName = string.Format("Accounting {0:yyyy-MM-dd}.csv", now);
             using (var sw = new StreamWriter(fileName))
@@ -44,7 +48,6 @@ namespace AccountingRobot
                         csvWriter.NextRecord();
                     }
                 }
-
             }
 
             /*
@@ -129,14 +132,12 @@ namespace AccountingRobot
 
             string skandiabankenXLSX = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\97132735232_2017_01_01-2017_12_15.xlsx";
             string aliExpressCSV = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\AliExpressOrders-2017-12-10_00-59.csv";
-            //string oberloXLSX = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\Oberlo Orders 2017-01-01-2017-12-04.xlsx";
             string oberloCSV = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\Oberlo Orders 2017-01-01-2017-12-31.csv";
 
             // prepopulate some lookup lists
             var aliExpressOrders = AliExpress.ReadOrders(aliExpressCSV);
             var aliExpressOrderGroups = AliExpress.CombineOrders(aliExpressOrders);
-            //var oberloOrders = Oberlo.ReadOrders(oberloXLSX);
-            var oberloOrders = Oberlo.ReadOrdersV2(oberloCSV);
+            var oberloOrders = Oberlo.ReadOrdersCSV(oberloCSV);
 
             // run through the bank account transactions
             var skandiabankenTransactions = Skandiabanken.ReadTransactions(skandiabankenXLSX);
@@ -226,7 +227,14 @@ namespace AccountingRobot
 
                             // join the ordernumbers into a string
                             var orderNumbers = string.Join(", ", joined.Select(c => c.Oberlo).Select(d => d.OrderNumber).Distinct());
-                            if (orderNumbers.Equals("")) orderNumbers = "NOT FOUND";
+                            if (orderNumbers.Equals(""))
+                            {
+                                accountingItem.ErrorMessage = "Shopify: No orders found";
+                                orderNumbers = "NOT FOUND";
+                            } else
+                            {
+                                accountingItem.ErrorMessage = "Shopify: More than one found. Choose one";
+                            }
                             Console.WriteLine("\t{0}", orderNumbers);
                             accountingItem.NumPurchase = orderNumbers;
                         }
@@ -234,6 +242,8 @@ namespace AccountingRobot
                         {
                             // could not find shopify order numbers
                             Console.WriteLine("\tERROR: NO SHOPIFY ORDERS FOUND!");
+                            accountingItem.ErrorMessage = "Shopify: No orders found";
+                            accountingItem.NumPurchase = "NOT FOUND";
                         }
                     }
                     // one to one match
@@ -254,13 +264,19 @@ namespace AccountingRobot
 
                         // join the ordernumbers into a string
                         var orderNumbers = string.Join(", ", oberloQuery.Select(c => c.OrderNumber).Distinct());
-                        if (orderNumbers.Equals("")) orderNumbers = "NOT FOUND";
+                        if (orderNumbers.Equals(""))
+                        {
+                            accountingItem.ErrorMessage = "Shopify: No orders found";
+                            orderNumbers = "NOT FOUND";
+                        }
                         Console.WriteLine("\t{0}", orderNumbers);
                         accountingItem.NumPurchase = orderNumbers;
                     }
                     else
                     {
                         Console.WriteLine("\tERROR: NONE FOUND!");
+                        accountingItem.ErrorMessage = "Shopify: No orders found";
+                        accountingItem.NumPurchase = "NOT FOUND";
                     }
                 }
 
@@ -343,9 +359,9 @@ namespace AccountingRobot
             Console.Out.WriteLine("Processing started ...");
             foreach (var shopifyOrder in shopifyOrders)
             {
+                // || shopifyOrder.Gateway == "Vipps"
                 if (shopifyOrder.FinancialStatus.Equals("refunded")
-                    || shopifyOrder.FinancialStatus.Equals("void")
-                    || shopifyOrder.Gateway == "Vipps") continue;
+                    || shopifyOrder.FinancialStatus.Equals("void")) continue;
 
                 // define accounting item
                 var accountingItem = new AccountingItem();
@@ -354,7 +370,10 @@ namespace AccountingRobot
                 accountingItem.Type = string.Format("{0} {1}", shopifyOrder.FinancialStatus, shopifyOrder.FulfillmentStatus);
                 accountingItem.AccountingType = "SHOPIFY";
                 accountingItem.Text = string.Format("SALG {0} {1}", shopifyOrder.CustomerName, shopifyOrder.PaymentId);
-                accountingItem.Gateway = shopifyOrder.Gateway;
+                if (shopifyOrder.Gateway != null)
+                {
+                    accountingItem.Gateway = shopifyOrder.Gateway.ToLower();
+                }
                 accountingItem.NumSale = shopifyOrder.Name;
 
                 var startDate = shopifyOrder.Date.AddDays(-1);
@@ -363,7 +382,12 @@ namespace AccountingRobot
                 switch (accountingItem.Gateway)
                 {
                     case "Vipps":
-                        // do nothing
+                        accountingItem.PurchaseOtherCurrency = shopifyOrder.TotalPrice;
+                        accountingItem.OtherCurrency = "NOK";
+
+                        //accountingItem.FeesVipps = fee;
+                        accountingItem.AccountVipps = shopifyOrder.TotalPrice;
+
                         break;
                     case "stripe":
 
@@ -381,21 +405,11 @@ namespace AccountingRobot
                         orderby transaction.Created ascending
                         select transaction;
 
-                        /*
-                        // try to find some common id between a shopify order and a stripe transaction
-                        var stripeQuery =
-                        from transaction in stripeTransactions
-                        where
-                        transaction.Metadata["order_id"].Contains(shopifyOrder.Id.ToString())
-                        orderby transaction.Created ascending
-                        select transaction;
-                        */
-
                         if (stripeQuery.Count() > 1)
                         {
                             // more than one ?!
                             Console.Out.WriteLine("ERROR: FOUND MORE THAN ONE!");
-                            accountingItem.ErrorMessage = "Stripe: More than one transaction found, choose one";
+                            accountingItem.ErrorMessage = "Stripe: More than one found, choose one";
                         }
                         else if (stripeQuery.Count() > 0)
                         {
@@ -420,6 +434,7 @@ namespace AccountingRobot
                         accountingItem.PurchaseOtherCurrency = shopifyOrder.TotalPrice;
                         accountingItem.OtherCurrency = "NOK";
 
+                        // Converting from paypal date to date:
                         // 2017-08-30T21:13:37Z
                         // var date = DateTimeOffset.Parse(paypalTransaction.Timestamp).UtcDateTime;
 
@@ -440,7 +455,7 @@ namespace AccountingRobot
                         {
                             // more than one ?!
                             Console.Out.WriteLine("ERROR: FOUND MORE THAN ONE!");
-                            accountingItem.ErrorMessage = "Paypal: More than one transaction found, choose one";
+                            accountingItem.ErrorMessage = "Paypal: More than one found, choose one";
                         }
                         else if (paypalQuery.Count() > 0)
                         {

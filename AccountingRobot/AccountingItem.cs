@@ -30,6 +30,7 @@ namespace AccountingRobot
 
         public decimal AccountPaypal { get; set; }
         public decimal AccountStripe { get; set; }
+        public decimal AccountVipps { get; set; }
         public decimal AccountBank { get; set; }
 
         public decimal VATPurchase { get; set; }
@@ -75,6 +76,7 @@ namespace AccountingRobot
 
             Map(m => m.AccountPaypal);
             Map(m => m.AccountStripe);
+            Map(m => m.AccountVipps);            
             Map(m => m.AccountBank);
 
             Map(m => m.VATPurchase);
