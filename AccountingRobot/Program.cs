@@ -73,6 +73,31 @@ namespace AccountingRobot
                 Console.WriteLine("{0:yyyy.MM.dd} {1:N} {2:N} {3} {4} {5} {6}", stripeTransaction.Created, amount, fee, stripeTransaction.Currency, stripeTransaction.Description, stripeTransaction.Type, stripeTransaction.Status);
             }
             
+            // get stripe configuration parameters
+            string stripeApiKey = ConfigurationManager.AppSettings["StripeApiKey"];
+            var stripeTransactions = Stripe.GetCharges(stripeApiKey);
+            foreach (var stripeTransaction in stripeTransactions)
+            {
+                DateTime date = stripeTransaction.Created;
+                string email = stripeTransaction.Metadata["email"];
+                string orderId = stripeTransaction.Metadata["order_id"];
+                string chargeId = stripeTransaction.Id;
+                bool paid = stripeTransaction.Paid;
+                bool refunded = stripeTransaction.Refunded;
+                string status = stripeTransaction.Status;
+
+                decimal amount = 0;
+                decimal fee = 0;
+                decimal net = 0;
+                if (stripeTransaction.BalanceTransaction != null)
+                {
+                    amount = (decimal)stripeTransaction.BalanceTransaction.Amount / 100;
+                    fee = (decimal)stripeTransaction.BalanceTransaction.Fee / 100;
+                    net = (decimal)stripeTransaction.BalanceTransaction.Net / 100;
+                }
+                Console.WriteLine("{0:yyyy.MM.dd} {1} {2} {3:N} {4:N} {5:N} {6} {7} {8} {9}", date, orderId, chargeId, amount, fee, net, email, status, paid ? "paid" : "not paid", refunded ? "refunded" : "not refunded");
+            }
+
             var oberloOrders = Oberlo.ReadOrders(@"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\Oberlo Orders 2017-01-01-2017-12-04.xlsx");
             foreach (var oberloOrder in oberloOrders)
             {
@@ -102,7 +127,7 @@ namespace AccountingRobot
         {
             var accountingList = new List<AccountingItem>();
 
-            string skandiabankenXLSX = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\97132735232_2017_01_01-2017_12_10.xlsx";
+            string skandiabankenXLSX = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\97132735232_2017_01_01-2017_12_15.xlsx";
             string aliExpressCSV = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\AliExpressOrders-2017-12-10_00-59.csv";
             //string oberloXLSX = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\Oberlo Orders 2017-01-01-2017-12-04.xlsx";
             string oberloCSV = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\Oberlo Orders 2017-01-01-2017-12-31.csv";
@@ -295,17 +320,17 @@ namespace AccountingRobot
 
             // prepopulate some lookup lists
             Console.Out.WriteLine("Prepopulating Lookup Lists ...");
+            // get stripe configuration parameters
+            string stripeApiKey = ConfigurationManager.AppSettings["StripeApiKey"];
+            var stripeTransactions = Stripe.GetCharges(stripeApiKey);
+            Console.Out.WriteLine("Successfully read Stripe transactions ...");
+
             // get paypal configuration parameters
             string payPalApiUsername = ConfigurationManager.AppSettings["PayPalApiUsername"];
             string payPalApiPassword = ConfigurationManager.AppSettings["PayPalApiPassword"];
             string payPalApiSignature = ConfigurationManager.AppSettings["PayPalApiSignature"];
             var paypalTransactions = Paypal.GetTransactions(payPalApiUsername, payPalApiPassword, payPalApiSignature);
             Console.Out.WriteLine("Successfully read PayPal transactions ...");
-
-            // get stripe configuration parameters
-            string stripeApiKey = ConfigurationManager.AppSettings["StripeApiKey"];
-            var stripeTransactions = Stripe.GetTransactions(stripeApiKey);
-            Console.Out.WriteLine("Successfully read Stripe transactions ...");
 
             // get shopify configuration parameters
             string shopifyDomain = ConfigurationManager.AppSettings["ShopifyDomain"];
@@ -332,6 +357,9 @@ namespace AccountingRobot
                 accountingItem.Gateway = shopifyOrder.Gateway;
                 accountingItem.NumSale = shopifyOrder.Name;
 
+                var startDate = shopifyOrder.Date.AddDays(-1);
+                var endDate = shopifyOrder.Date.AddDays(1);
+
                 switch (accountingItem.Gateway)
                 {
                     case "Vipps":
@@ -346,24 +374,36 @@ namespace AccountingRobot
                         var stripeQuery =
                         from transaction in stripeTransactions
                         where
-                        transaction.Type.Equals("charge") &&
+                        transaction.Paid &&
+                        transaction.Metadata["email"].Equals(shopifyOrder.CustomerEmail) &&
                         transaction.Amount == (int)(shopifyOrder.TotalPrice * 100) &&
-                        transaction.Created.Date == shopifyOrder.Date.Date
+                         (transaction.Created.Date >= startDate.Date && transaction.Created.Date <= endDate.Date)
                         orderby transaction.Created ascending
                         select transaction;
+
+                        /*
+                        // try to find some common id between a shopify order and a stripe transaction
+                        var stripeQuery =
+                        from transaction in stripeTransactions
+                        where
+                        transaction.Metadata["order_id"].Contains(shopifyOrder.Id.ToString())
+                        orderby transaction.Created ascending
+                        select transaction;
+                        */
 
                         if (stripeQuery.Count() > 1)
                         {
                             // more than one ?!
                             Console.Out.WriteLine("ERROR: FOUND MORE THAN ONE!");
+                            accountingItem.ErrorMessage = "Stripe: More than one transaction found, choose one";
                         }
                         else if (stripeQuery.Count() > 0)
                         {
                             // one match
                             var stripeTransaction = stripeQuery.First();
                             decimal amount = (decimal)stripeTransaction.Amount / 100;
-                            decimal net = (decimal)stripeTransaction.Net / 100;
-                            decimal fee = (decimal)stripeTransaction.Fee / 100;
+                            decimal net = (decimal)stripeTransaction.BalanceTransaction.Net / 100;
+                            decimal fee = (decimal)stripeTransaction.BalanceTransaction.Fee / 100;
 
                             accountingItem.FeesStripe = fee;
                             accountingItem.AccountStripe = net;
@@ -371,16 +411,54 @@ namespace AccountingRobot
                         else
                         {
                             Console.Out.WriteLine("ERROR: NONE FOUND!");
+                            accountingItem.ErrorMessage = "Stripe: No transactions found";
                         }
 
                         break;
                     case "paypal":
+
+                        accountingItem.PurchaseOtherCurrency = shopifyOrder.TotalPrice;
+                        accountingItem.OtherCurrency = "NOK";
+
                         // 2017-08-30T21:13:37Z
                         // var date = DateTimeOffset.Parse(paypalTransaction.Timestamp).UtcDateTime;
 
                         // lookup the paypal transaction
+                        var paypalQuery =
+                        from transaction in paypalTransactions
+                        let grossAmount = decimal.Parse(transaction.GrossAmount.value, CultureInfo.InvariantCulture)
+                        let timestamp = DateTimeOffset.Parse(transaction.Timestamp).UtcDateTime
+                        where
+                        transaction.Status.Equals("Completed")
+                        && (null != transaction.Payer && transaction.Payer.Equals(shopifyOrder.CustomerEmail))
+                        && (grossAmount == shopifyOrder.TotalPrice)
+                        && (timestamp.Date >= startDate.Date && timestamp.Date <= endDate.Date)
+                        orderby timestamp ascending
+                        select transaction;
 
-                        accountingItem.AccountPaypal = shopifyOrder.TotalPrice;
+                        if (paypalQuery.Count() > 1)
+                        {
+                            // more than one ?!
+                            Console.Out.WriteLine("ERROR: FOUND MORE THAN ONE!");
+                            accountingItem.ErrorMessage = "Paypal: More than one transaction found, choose one";
+                        }
+                        else if (paypalQuery.Count() > 0)
+                        {
+                            // one match
+                            var paypalTransaction = paypalQuery.First();
+                            decimal amount = decimal.Parse(paypalTransaction.GrossAmount.value, CultureInfo.InvariantCulture);
+                            decimal net = decimal.Parse(paypalTransaction.NetAmount.value, CultureInfo.InvariantCulture);
+                            decimal fee = decimal.Parse(paypalTransaction.FeeAmount.value, CultureInfo.InvariantCulture);
+
+                            accountingItem.FeesPaypal = -fee;
+                            accountingItem.AccountPaypal = net;
+                        }
+                        else
+                        {
+                            Console.Out.WriteLine("ERROR: NONE FOUND!");
+                            accountingItem.ErrorMessage = "Paypal: No transactions found";
+                        }
+
                         break;
                 }
 
@@ -399,6 +477,7 @@ namespace AccountingRobot
                 if (shopifyOrder.TotalPrice == 0)
                 {
                     accountingItem.AccountingType += " FREE";
+                    accountingItem.Gateway = "none";
                 }
 
                 accountingList.Add(accountingItem);
