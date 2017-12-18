@@ -1,4 +1,5 @@
 ﻿using CsvHelper;
+using OberloScraper;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -130,14 +131,23 @@ namespace AccountingRobot
         {
             var accountingList = new List<AccountingItem>();
 
+            var currentDate = DateTime.Now.Date;
+            var currentYear = currentDate.Year;
+            var from = new DateTime(currentYear, 1, 1);
+            var to = currentDate;
+
+            string userDataDir = ConfigurationManager.AppSettings["UserDataDir"];
+            string oberloUsername = ConfigurationManager.AppSettings["OberloUsername"];
+            string oberloPassword = ConfigurationManager.AppSettings["OberloPassword"];
+
             string skandiabankenXLSX = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\97132735232_2017_01_01-2017_12_15.xlsx";
-            string aliExpressCSV = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\AliExpressOrders-2017-12-10_00-59.csv";
-            string oberloCSV = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\Oberlo Orders 2017-01-01-2017-12-31.csv";
+            string aliExpressCSV = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\AliExpressOrders-2017-12-18_08-04.csv";
+            //string oberloCSV = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\Oberlo Orders 2017-01-01-2017-12-18.csv";
 
             // prepopulate some lookup lists
+            var oberloOrders = Oberlo.GetLatestOberloOrders(userDataDir, oberloUsername, oberloPassword);
             var aliExpressOrders = AliExpress.ReadOrders(aliExpressCSV);
             var aliExpressOrderGroups = AliExpress.CombineOrders(aliExpressOrders);
-            var oberloOrders = Oberlo.ReadOrdersCSV(oberloCSV);
 
             // run through the bank account transactions
             var skandiabankenTransactions = Skandiabanken.ReadTransactions(skandiabankenXLSX);
@@ -268,6 +278,10 @@ namespace AccountingRobot
                         {
                             accountingItem.ErrorMessage = "Shopify: No orders found";
                             orderNumbers = "NOT FOUND";
+                        } else
+                        {
+                            // lookup customer name
+                            accountingItem.CustomerName = oberloQuery.First().CustomerName;
                         }
                         Console.WriteLine("\t{0}", orderNumbers);
                         accountingItem.NumPurchase = orderNumbers;
@@ -372,6 +386,7 @@ namespace AccountingRobot
                 accountingItem.Type = string.Format("{0} {1}", shopifyOrder.FinancialStatus, shopifyOrder.FulfillmentStatus);
                 accountingItem.AccountingType = "SHOPIFY";
                 accountingItem.Text = string.Format("SALG {0} {1}", shopifyOrder.CustomerName, shopifyOrder.PaymentId);
+                accountingItem.CustomerName = shopifyOrder.CustomerName;
                 if (shopifyOrder.Gateway != null)
                 {
                     accountingItem.Gateway = shopifyOrder.Gateway.ToLower();
