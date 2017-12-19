@@ -14,7 +14,7 @@ namespace AccountingRobot
         static void Main(string[] args)
         {
             // process the transactions and create accounting overview
-            string skandiabankenXLSX = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\97132735232_2017_01_01-2017_12_15.xlsx";
+            string skandiabankenXLSX = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\97132735232_2017_01_01-2017_12_18.xlsx";
             var accountingShopifyItems = ProcessShopifyStatement();
             var accountingBankItems = ProcessBankAccountStatement(skandiabankenXLSX);
 
