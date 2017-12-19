@@ -1,12 +1,11 @@
-﻿using AliOrderScraper;
-using CsvHelper;
-using OberloScraper;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
-using System.Globalization;
-using System.IO;
 using System.Linq;
+using AliOrderScraper;
+using OberloScraper;
+using ClosedXML.Excel;
+using System.Data;
 
 namespace AccountingRobot
 {
@@ -14,8 +13,10 @@ namespace AccountingRobot
     {
         static void Main(string[] args)
         {
+            // process the transactions and create accounting overview
+            string skandiabankenXLSX = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\97132735232_2017_01_01-2017_12_15.xlsx";
             var accountingShopifyItems = ProcessShopifyStatement();
-            var accountingBankItems = ProcessBankAccountStatement();
+            var accountingBankItems = ProcessBankAccountStatement(skandiabankenXLSX);
 
             // merge into one list
             accountingShopifyItems.AddRange(accountingBankItems);
@@ -25,37 +26,143 @@ namespace AccountingRobot
 
             // and store in file
             var now = DateTime.Now;
-            var fileName = string.Format("Accounting {0:yyyy-MM-dd}.csv", now);
-            using (var sw = new StreamWriter(fileName))
+            var fileName = string.Format("Accounting {0:yyyy-MM-dd}.xlsx", now);
+
+            DataTable dt = new DataTable();
+            dt.Columns.Add("Periode", typeof(int));
+            dt.Columns.Add("Date", typeof(DateTime));
+            dt.Columns.Add("Number", typeof(int));
+            dt.Columns.Add("ArchiveReference", typeof(long));
+            dt.Columns.Add("Type", typeof(string));
+            dt.Columns.Add("AccountingType", typeof(string));
+            dt.Columns.Add("Text", typeof(string));
+            dt.Columns.Add("CustomerName", typeof(string));
+            dt.Columns.Add("ErrorMessage", typeof(string));
+            dt.Columns.Add("Gateway", typeof(string));
+            dt.Columns.Add("NumSale", typeof(string));
+            dt.Columns.Add("NumPurchase", typeof(string));
+            dt.Columns.Add("PurchaseOtherCurrency", typeof(decimal));
+            dt.Columns.Add("OtherCurrency", typeof(string));
+
+            dt.Columns.Add("AccountPaypal", typeof(decimal));  // 1910
+            dt.Columns.Add("AccountStripe", typeof(decimal));  // 1915
+            dt.Columns.Add("AccountVipps", typeof(decimal));   // 1918
+            dt.Columns.Add("AccountBank", typeof(decimal));    // 1920
+
+            dt.Columns.Add("VATPurchase", typeof(decimal));
+            dt.Columns.Add("VATSales", typeof(decimal));
+
+            dt.Columns.Add("SalesVAT", typeof(decimal));       // 3000
+            dt.Columns.Add("SalesVATExempt", typeof(decimal)); // 3100
+
+            dt.Columns.Add("CostOfGoods", typeof(decimal));            // 4005
+            dt.Columns.Add("CostForReselling", typeof(decimal));       // 4300
+            dt.Columns.Add("CostForSalary", typeof(decimal));          // 5000
+            dt.Columns.Add("CostForSalaryTax", typeof(decimal));       // 5400
+            dt.Columns.Add("CostForDepreciation", typeof(decimal));    // 6000
+            dt.Columns.Add("CostForShipping", typeof(decimal));        // 6100
+            dt.Columns.Add("CostForElectricity", typeof(decimal));     // 6340 
+            dt.Columns.Add("CostForToolsInventory", typeof(decimal));      // 6500
+            dt.Columns.Add("CostForMaintenance", typeof(decimal));         // 6695
+            dt.Columns.Add("CostForFacilities", typeof(decimal));          // 6800 
+
+            dt.Columns.Add("CostOfData", typeof(decimal));                 // 6810 
+            dt.Columns.Add("CostOfPhoneInternet", typeof(decimal));        // 6900
+            dt.Columns.Add("CostForTravelAndAllowance", typeof(decimal));  // 7140
+            dt.Columns.Add("CostOfAdvertising", typeof(decimal));          // 7330
+            dt.Columns.Add("CostOfOther", typeof(decimal));                // 7700
+
+            dt.Columns.Add("FeesBank", typeof(decimal));                   // 7770
+            dt.Columns.Add("FeesPaypal", typeof(decimal));                 // 7780
+            dt.Columns.Add("FeesStripe", typeof(decimal));                 // 7785 
+
+            dt.Columns.Add("CostForEstablishment", typeof(decimal));       // 7790
+
+            dt.Columns.Add("IncomeFinance", typeof(decimal));              // 8099
+            dt.Columns.Add("CostOfFinance", typeof(decimal));              // 8199
+
+            foreach (var accountingItem in accountingItems)
             {
-                sw.Write("sep=,\n");
-                using (var csvWriter = new CsvWriter(sw))
-                {
-                    csvWriter.Configuration.Delimiter = ",";
-                    csvWriter.Configuration.HasHeaderRecord = true;
-                    csvWriter.Configuration.CultureInfo = new CultureInfo("no-No");
-                    csvWriter.Configuration.RegisterClassMap<AccountingItemCsvMap>();
+                dt.Rows.Add(accountingItem.Periode,
+                    accountingItem.Date,
+                    accountingItem.Number,
+                    accountingItem.ArchiveReference,
+                    accountingItem.Type,
+                    accountingItem.AccountingType,
+                    accountingItem.Text,
+                    accountingItem.CustomerName,
+                    accountingItem.ErrorMessage,
+                    accountingItem.Gateway,
+                    accountingItem.NumSale,
+                    accountingItem.NumPurchase,
+                    accountingItem.PurchaseOtherCurrency,
+                    accountingItem.OtherCurrency,
 
-                    // write all
-                    //csvWriter.WriteRecords(accountingItems);
+                    accountingItem.AccountPaypal,               // 1910
+                    accountingItem.AccountStripe,               // 1915
+                    accountingItem.AccountVipps,                // 1918
+                    accountingItem.AccountBank,                 // 1920
 
-                    // write header
-                    csvWriter.WriteHeader<AccountingItem>();
-                    csvWriter.NextRecord();
+                    accountingItem.VATPurchase,
+                    accountingItem.VATSales,
 
-                    // write each record
-                    foreach (var accountingItem in accountingItems)
-                    {
-                        csvWriter.WriteRecord<AccountingItem>(accountingItem);
-                        csvWriter.NextRecord();
-                    }
-                }
+                    accountingItem.SalesVAT,                    // 3000
+                    accountingItem.SalesVATExempt,              // 3100
+
+                    accountingItem.CostOfGoods,                 // 4005
+                    accountingItem.CostForReselling,            // 4300
+                    accountingItem.CostForSalary,               // 5000
+                    accountingItem.CostForSalaryTax,            // 5400
+                    accountingItem.CostForDepreciation,         // 6000
+                    accountingItem.CostForShipping,             // 6100
+                    accountingItem.CostForElectricity,          // 6340 
+                    accountingItem.CostForToolsInventory,       // 6500
+                    accountingItem.CostForMaintenance,          // 6695
+                    accountingItem.CostForFacilities,           // 6800 
+
+                    accountingItem.CostOfData,                  // 6810 
+                    accountingItem.CostOfPhoneInternet,         // 6900
+                    accountingItem.CostForTravelAndAllowance,   // 7140
+                    accountingItem.CostOfAdvertising,           // 7330
+                    accountingItem.CostOfOther,                 // 7700
+
+                    accountingItem.FeesBank,                    // 7770
+                    accountingItem.FeesPaypal,                  // 7780
+                    accountingItem.FeesStripe,                  // 7785 
+
+                    accountingItem.CostForEstablishment,        // 7790
+
+                    accountingItem.IncomeFinance,               // 8099
+                    accountingItem.CostOfFinance                // 8199
+                    );
+            }
+
+            // Codes for the Closed XML
+            using (XLWorkbook wb = new XLWorkbook())
+            {
+                var ws = wb.Worksheets.Add(dt, "Accounting");
+
+                // set formats
+                ws.Range("B2:B9999").Style.NumberFormat.Format = "dd.MM.yyyy";
+                ws.Range("D2:D9999").Style.NumberFormat.Format = "####################";
+
+                // Custom formats for numbers in Excel are entered in this format:
+                // positive number format;negative number format;zero format;text format
+                ws.Range("M2:M9999").Style.NumberFormat.Format = "#,##0.00;[Red]-#,##0.00;";
+                ws.Range("M2:M9999").DataType = XLCellValues.Number;
+
+                // set style and format for the decimal range
+                var decimalRange = ws.Range("O2:AQ9999");
+                decimalRange.Style.NumberFormat.Format = "#,##0.00;[Red]-#,##0.00;";
+                decimalRange.DataType = XLCellValues.Number;
+
+                wb.SaveAs(fileName);
             }
 
             Console.ReadLine();
         }
 
-        static List<AccountingItem> ProcessBankAccountStatement()
+        static List<AccountingItem> ProcessBankAccountStatement(string skandiabankenXLSX)
         {
             var accountingList = new List<AccountingItem>();
 
@@ -63,8 +170,6 @@ namespace AccountingRobot
             var currentYear = currentDate.Year;
             var from = new DateTime(currentYear, 1, 1);
             var to = currentDate;
-
-            string skandiabankenXLSX = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\97132735232_2017_01_01-2017_12_15.xlsx";
 
             // prepopulate some lookup lists
             var oberloOrders = Oberlo.GetLatestOberloOrders();
@@ -163,7 +268,8 @@ namespace AccountingRobot
                             {
                                 accountingItem.ErrorMessage = "Shopify: No orders found";
                                 orderNumbers = "NOT FOUND";
-                            } else
+                            }
+                            else
                             {
                                 accountingItem.ErrorMessage = "Shopify: More than one found. Choose one";
                             }
@@ -200,7 +306,8 @@ namespace AccountingRobot
                         {
                             accountingItem.ErrorMessage = "Shopify: No orders found";
                             orderNumbers = "NOT FOUND";
-                        } else
+                        }
+                        else
                         {
                             // lookup customer name
                             accountingItem.CustomerName = oberloQuery.First().CustomerName;

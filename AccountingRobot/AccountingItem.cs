@@ -1,9 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using CsvHelper.Configuration;
 
 namespace AccountingRobot
@@ -66,7 +61,7 @@ namespace AccountingRobot
         public decimal IncomeFinance { get; set; }              // 8099
         public decimal CostOfFinance { get; set; }              // 8199
     }
-
+    
     public sealed class AccountingItemCsvMap : ClassMap<AccountingItem>
     {
         public AccountingItemCsvMap()
