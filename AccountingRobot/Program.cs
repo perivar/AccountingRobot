@@ -52,79 +52,6 @@ namespace AccountingRobot
                 }
             }
 
-            /*
-            // get paypal configuration parameters
-            string payPalApiUsername = ConfigurationManager.AppSettings["PayPalApiUsername"];
-            string payPalApiPassword = ConfigurationManager.AppSettings["PayPalApiPassword"];
-            string payPalApiSignature = ConfigurationManager.AppSettings["PayPalApiSignature"];
-            var paypalTransactions = Paypal.GetTransactions(payPalApiUsername, payPalApiPassword, payPalApiSignature);
-            foreach (var paypalTransaction in paypalTransactions)
-            {
-                // 2017-08-30T21:13:37Z
-                var date = DateTimeOffset.Parse(paypalTransaction.Timestamp).UtcDateTime;
-
-                Console.WriteLine("{0:dd.MM.yyyy} {1} {2} {3}", date, paypalTransaction.GrossAmount.value, paypalTransaction.FeeAmount.value, paypalTransaction.PayerDisplayName);
-            }
-            */
-
-            /*
-            // get stripe configuration parameters
-            string stripeApiKey = ConfigurationManager.AppSettings["StripeApiKey"];
-            var stripeTransactions = Stripe.GetTransactions(stripeApiKey);
-            foreach (var stripeTransaction in stripeTransactions)
-            {
-                decimal amount = (decimal)stripeTransaction.Amount / 100;
-                decimal fee = (decimal)stripeTransaction.Fee / 100;
-                Console.WriteLine("{0:yyyy.MM.dd} {1:N} {2:N} {3} {4} {5} {6}", stripeTransaction.Created, amount, fee, stripeTransaction.Currency, stripeTransaction.Description, stripeTransaction.Type, stripeTransaction.Status);
-            }
-            
-            // get stripe configuration parameters
-            string stripeApiKey = ConfigurationManager.AppSettings["StripeApiKey"];
-            var stripeTransactions = Stripe.GetCharges(stripeApiKey);
-            foreach (var stripeTransaction in stripeTransactions)
-            {
-                DateTime date = stripeTransaction.Created;
-                string email = stripeTransaction.Metadata["email"];
-                string orderId = stripeTransaction.Metadata["order_id"];
-                string chargeId = stripeTransaction.Id;
-                bool paid = stripeTransaction.Paid;
-                bool refunded = stripeTransaction.Refunded;
-                string status = stripeTransaction.Status;
-
-                decimal amount = 0;
-                decimal fee = 0;
-                decimal net = 0;
-                if (stripeTransaction.BalanceTransaction != null)
-                {
-                    amount = (decimal)stripeTransaction.BalanceTransaction.Amount / 100;
-                    fee = (decimal)stripeTransaction.BalanceTransaction.Fee / 100;
-                    net = (decimal)stripeTransaction.BalanceTransaction.Net / 100;
-                }
-                Console.WriteLine("{0:yyyy.MM.dd} {1} {2} {3:N} {4:N} {5:N} {6} {7} {8} {9}", date, orderId, chargeId, amount, fee, net, email, status, paid ? "paid" : "not paid", refunded ? "refunded" : "not refunded");
-            }
-
-            var oberloOrders = Oberlo.ReadOrders(@"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\Oberlo Orders 2017-01-01-2017-12-04.xlsx");
-            foreach (var oberloOrder in oberloOrders)
-            {
-                Console.WriteLine("{0}", oberloOrder);
-            }
-            
-
-            var skandiabankenTransactions = Skandiabanken.ReadTransactions(@"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\97132735232_2017_01_01-2017_12_10.xlsx");
-            foreach (var skandiabankenTransaction in skandiabankenTransactions)
-            {
-                Console.WriteLine("{0}", skandiabankenTransaction.GuessAccountType());
-            }
-
-            
-            var aliExpressOrders = AliExpress.ReadOrders(@"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\AliExpressOrders-2017-12-10_00-59.csv");
-            foreach (var aliExpressOrder in aliExpressOrders)
-            {
-                Console.WriteLine("{0}", aliExpressOrder);
-            }
-
-            */
-
             Console.ReadLine();
         }
 
@@ -138,8 +65,6 @@ namespace AccountingRobot
             var to = currentDate;
 
             string skandiabankenXLSX = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\97132735232_2017_01_01-2017_12_15.xlsx";
-            //string aliExpressCSV = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\AliExpressOrders-2017-12-18_08-04.csv";
-            //string oberloCSV = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\Oberlo Orders 2017-01-01-2017-12-18.csv";
 
             // prepopulate some lookup lists
             var oberloOrders = Oberlo.GetLatestOberloOrders();
@@ -285,7 +210,7 @@ namespace AccountingRobot
                     }
                     else
                     {
-                        Console.WriteLine("\tERROR: NONE SHOPIFY ORDER FOUND!");
+                        Console.WriteLine("\tERROR: NO SHOPIFY ORDER FOUND!");
                         accountingItem.ErrorMessage = "Shopify: No orders found";
                         accountingItem.NumPurchase = "NOT FOUND";
                     }
@@ -351,7 +276,7 @@ namespace AccountingRobot
             var stripeTransactions = Stripe.GetLatestStripeTransactions();
             Console.Out.WriteLine("Successfully read Stripe transactions ...");
 
-            var paypalTransactions = Paypal.GetTransactions();
+            var paypalTransactions = Paypal.GetLatestPaypalTransactions();
             Console.Out.WriteLine("Successfully read PayPal transactions ...");
 
             // get shopify configuration parameters
@@ -362,10 +287,9 @@ namespace AccountingRobot
             var shopifyOrders = Shopify.ReadShopifyOrders(shopifyDomain, shopifyAPIKey, shopifyAPIPassword);
             Console.Out.WriteLine("Successfully read all Shopify orders ...");
 
-            Console.Out.WriteLine("Processing started ...");
+            Console.Out.WriteLine("Processing Shopify orders started ...");
             foreach (var shopifyOrder in shopifyOrders)
             {
-                // || shopifyOrder.Gateway == "Vipps"
                 // skip, not paid (pending), cancelled (voided) and fully refunded orders (refunded)
                 if (shopifyOrder.FinancialStatus.Equals("refunded")
                     || shopifyOrder.FinancialStatus.Equals("voided")
@@ -373,7 +297,7 @@ namespace AccountingRobot
 
                 // define accounting item
                 var accountingItem = new AccountingItem();
-                accountingItem.Date = shopifyOrder.Date;
+                accountingItem.Date = shopifyOrder.CreatedAt;
                 accountingItem.ArchiveReference = shopifyOrder.Id;
                 accountingItem.Type = string.Format("{0} {1}", shopifyOrder.FinancialStatus, shopifyOrder.FulfillmentStatus);
                 accountingItem.AccountingType = "SHOPIFY";
@@ -385,8 +309,8 @@ namespace AccountingRobot
                 }
                 accountingItem.NumSale = shopifyOrder.Name;
 
-                var startDate = shopifyOrder.Date.AddDays(-1);
-                var endDate = shopifyOrder.Date.AddDays(1);
+                var startDate = shopifyOrder.ProcessedAt.AddDays(-1);
+                var endDate = shopifyOrder.ProcessedAt.AddDays(1);
 
                 switch (accountingItem.Gateway)
                 {
@@ -417,7 +341,7 @@ namespace AccountingRobot
                         if (stripeQuery.Count() > 1)
                         {
                             // more than one ?!
-                            Console.Out.WriteLine("ERROR: FOUND MORE THAN ONE!");
+                            Console.Out.WriteLine("ERROR: FOUND MORE THAN ONE MATCHING STRIPE TRANSACTION!");
                             accountingItem.ErrorMessage = "Stripe: More than one found, choose one";
                         }
                         else if (stripeQuery.Count() > 0)
@@ -433,7 +357,7 @@ namespace AccountingRobot
                         }
                         else
                         {
-                            Console.Out.WriteLine("ERROR: NONE FOUND!");
+                            Console.Out.WriteLine("ERROR: NO STRIPE TRANSACTIONS FOUND!");
                             accountingItem.ErrorMessage = "Stripe: No transactions found";
                         }
 
@@ -443,15 +367,11 @@ namespace AccountingRobot
                         accountingItem.PurchaseOtherCurrency = shopifyOrder.TotalPrice;
                         accountingItem.OtherCurrency = "NOK";
 
-                        // Converting from paypal date to date:
-                        // 2017-08-30T21:13:37Z
-                        // var date = DateTimeOffset.Parse(paypalTransaction.Timestamp).UtcDateTime;
-
                         // lookup the paypal transaction
                         var paypalQuery =
                         from transaction in paypalTransactions
-                        let grossAmount = decimal.Parse(transaction.GrossAmount.value, CultureInfo.InvariantCulture)
-                        let timestamp = DateTimeOffset.Parse(transaction.Timestamp).UtcDateTime
+                        let grossAmount = transaction.GrossAmount
+                        let timestamp = transaction.Timestamp
                         where
                         transaction.Status.Equals("Completed")
                         && (null != transaction.Payer && transaction.Payer.Equals(shopifyOrder.CustomerEmail))
@@ -463,23 +383,23 @@ namespace AccountingRobot
                         if (paypalQuery.Count() > 1)
                         {
                             // more than one ?!
-                            Console.Out.WriteLine("ERROR: FOUND MORE THAN ONE!");
+                            Console.Out.WriteLine("ERROR: FOUND MORE THAN ONE PAYPAL TRANSACTION!");
                             accountingItem.ErrorMessage = "Paypal: More than one found, choose one";
                         }
                         else if (paypalQuery.Count() > 0)
                         {
                             // one match
                             var paypalTransaction = paypalQuery.First();
-                            decimal amount = decimal.Parse(paypalTransaction.GrossAmount.value, CultureInfo.InvariantCulture);
-                            decimal net = decimal.Parse(paypalTransaction.NetAmount.value, CultureInfo.InvariantCulture);
-                            decimal fee = decimal.Parse(paypalTransaction.FeeAmount.value, CultureInfo.InvariantCulture);
+                            decimal amount = paypalTransaction.GrossAmount;
+                            decimal net = paypalTransaction.NetAmount;
+                            decimal fee = paypalTransaction.FeeAmount;
 
                             accountingItem.FeesPaypal = -fee;
                             accountingItem.AccountPaypal = net;
                         }
                         else
                         {
-                            Console.Out.WriteLine("ERROR: NONE FOUND!");
+                            Console.Out.WriteLine("ERROR: NO PAYPAL TRANSACTIONS FOUND!");
                             accountingItem.ErrorMessage = "Paypal: No transactions found";
                         }
 

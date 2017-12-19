@@ -38,7 +38,7 @@ namespace AliOrderScraper
                 // check that the from date isn't today
                 if (from.Equals(to))
                 {
-                    Console.Out.WriteLine("Latest aliexpress cache file is from today.");
+                    Console.Out.WriteLine("Latest AliExpress cache file is from today.");
                     return GetAliExpressCacheFile(lastCacheFile.Value);
                 }
             }

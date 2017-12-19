@@ -5,7 +5,11 @@ namespace AccountingRobot
     public class ShopifyOrder
     {
         public long Id { get; set; }
-        public DateTime Date { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+        public DateTime ProcessedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+
         public string Name { get; set; }
         public string FinancialStatus { get; set; }
         public string FulfillmentStatus { get; set; }
@@ -25,7 +29,7 @@ namespace AccountingRobot
 
         public override string ToString()
         {
-            return string.Format("{0} {1:dd-MM-yyyy} {2} {3} {4} {5} {6:C} {7}", Id, Date, Name, FinancialStatus, FulfillmentStatus, Gateway, TotalPrice, CustomerName);
+            return string.Format("{0} {1:dd-MM-yyyy} {2} {3} {4} {5} {6:C} {7}", Id, CreatedAt, Name, FinancialStatus, FulfillmentStatus, Gateway, TotalPrice, CustomerName);
         }
     }
 }

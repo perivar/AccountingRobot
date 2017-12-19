@@ -74,7 +74,10 @@ namespace AccountingRobot
                 {
                     var shopifyOrder = new ShopifyOrder();
                     shopifyOrder.Id = order.id;
-                    shopifyOrder.Date = order.created_at;
+                    shopifyOrder.CreatedAt = order.created_at;
+                    shopifyOrder.ProcessedAt = order.processed_at;
+                    shopifyOrder.UpdatedAt = order.updated_at;
+
                     shopifyOrder.Name = order.name;
                     shopifyOrder.FinancialStatus = order.financial_status;
                     string fulfillmentStatusTmp = order.fulfillment_status;
@@ -90,6 +93,7 @@ namespace AccountingRobot
                     shopifyOrder.TotalPrice = order.total_price;
                     shopifyOrder.TotalTax = order.total_tax;
                     shopifyOrder.CustomerEmail = order.contact_email;
+
                     shopifyOrder.CustomerName = string.Format("{0} {1}", order.customer.first_name, order.customer.last_name);
                     shopifyOrder.CustomerAddress = order.customer.default_address.address1;
                     shopifyOrder.CustomerAddress2 = order.customer.default_address.address2;
@@ -97,6 +101,10 @@ namespace AccountingRobot
                     shopifyOrder.CustomerZipCode = order.customer.default_address.zip;
 
                     if (shopifyOrder.Name.Equals("#1002"))
+                    {
+                        // breakpoint here
+                    }
+                    if (shopifyOrder.CustomerEmail.Equals("janne.braseth@gmail.com"))
                     {
                         // breakpoint here
                     }

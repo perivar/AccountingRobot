@@ -39,7 +39,7 @@ namespace OberloScraper
                 // check that the from date isn't today
                 if (from.Equals(to))
                 {
-                    Console.Out.WriteLine("Latest oberlo cache file is from today.");
+                    Console.Out.WriteLine("Latest Oberlo cache file is from today.");
                     return GetOberloCacheFile(lastCacheFile.Value);
                 }
             }

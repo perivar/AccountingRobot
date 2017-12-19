@@ -138,6 +138,7 @@
     <Compile Include="FastExcelUtils.cs" />
     <Compile Include="Oberlo.cs" />
     <Compile Include="Paypal.cs" />
+    <Compile Include="PayPalTransaction.cs" />
     <Compile Include="Shopify.cs" />
     <Compile Include="Skandiabanken.cs" />
     <Compile Include="OberloOrder.cs" />

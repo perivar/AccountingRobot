@@ -112,7 +112,7 @@ namespace AccountingRobot
                 // check that the from date isn't today
                 if (from.Equals(to))
                 {
-                    Console.Out.WriteLine("Latest stripe cache file is from today.");
+                    Console.Out.WriteLine("Latest Stripe cache file is from today.");
                     return GetStripeTransactionsCacheFile(lastCacheFile.Value);
                 }
             }
