@@ -146,6 +146,7 @@
     <Compile Include="ShopifyOrder.cs" />
     <Compile Include="SkandiabankenTransaction.cs" />
     <Compile Include="Stripe.cs" />
+    <Compile Include="StripeTransaction.cs" />
     <Compile Include="Utils.cs" />
   </ItemGroup>
   <ItemGroup>

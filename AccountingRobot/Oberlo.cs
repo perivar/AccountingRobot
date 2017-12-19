@@ -8,20 +8,27 @@ using Newtonsoft.Json;
 using CsvHelper;
 using System.IO;
 using System.Globalization;
-using System.Text.RegularExpressions;
+using System.Configuration;
+using AccountingRobot;
 
 namespace OberloScraper
 {
     public static class Oberlo
     {
-        public static List<OberloOrder> GetLatestOberloOrders(string userDataDir, string oberloUsername, string oberloPassword)
+        public static List<OberloOrder> GetLatestOberloOrders()
         {
+            string userDataDir = ConfigurationManager.AppSettings["UserDataDir"];
+            string oberloUsername = ConfigurationManager.AppSettings["OberloUsername"];
+            string oberloPassword = ConfigurationManager.AppSettings["OberloPassword"];
+            string cacheDir = ConfigurationManager.AppSettings["CacheDir"];
+            string cacheFileNamePrefix = "Oberlo Orders";
+
+            var lastCacheFile = Utils.FindLastCacheFile(cacheDir, cacheFileNamePrefix);
+
             // check if we have a cache file
             DateTime from = default(DateTime);
             DateTime to = default(DateTime);
-
-            var lastCacheFile = FindLastCacheFile(".", "Oberlo Orders");
-
+        
             // if the cache file object has values
             if (!lastCacheFile.Equals(default(KeyValuePair<DateTime, string>)))
             {
@@ -32,7 +39,7 @@ namespace OberloScraper
                 // check that the from date isn't today
                 if (from.Equals(to))
                 {
-                    Console.Out.WriteLine("Latest cache file is from today.");
+                    Console.Out.WriteLine("Latest oberlo cache file is from today.");
                     return GetOberloCacheFile(lastCacheFile.Value);
                 }
             }
@@ -46,14 +53,14 @@ namespace OberloScraper
             }
 
             Console.Out.WriteLine("Finding oberlo orders from {0:yyyy-MM-dd} to {1:yyyy-MM-dd}", from, to);
-            return GetOberloOrders(userDataDir, oberloUsername, oberloPassword, from, to);
+            return GetOberloOrders(cacheDir, cacheFileNamePrefix, userDataDir, oberloUsername, oberloPassword, from, to);
         }
 
-        public static List<OberloOrder> GetOberloOrders(string userDataDir, string oberloUsername, string oberloPassword, DateTime from, DateTime to, bool forceUpdate = false)
+        public static List<OberloOrder> GetOberloOrders(string cacheDir, string cacheFileNamePrefix, string userDataDir, string oberloUsername, string oberloPassword, DateTime from, DateTime to, bool forceUpdate = false)
         {
-            var fileName = string.Format("Oberlo Orders {0:yyyy-MM-dd}-{1:yyyy-MM-dd}.csv", from, to);
+            string cacheFilePath = Path.Combine(cacheDir, string.Format("{0}-{1:yyyy-MM-dd}-{2:yyyy-MM-dd}.csv", cacheFileNamePrefix, from, to));
 
-            var cachedOberloOrders = GetOberloCacheFile(fileName, forceUpdate);
+            var cachedOberloOrders = GetOberloCacheFile(cacheFilePath, forceUpdate);
             if (cachedOberloOrders != null && cachedOberloOrders.Count() > 0)
             {
                 Console.Out.WriteLine("Found cached file.");
@@ -63,7 +70,7 @@ namespace OberloScraper
             {
                 var oberloOrders = ScrapeOberloOrders(userDataDir, oberloUsername, oberloPassword, from, to);
 
-                using (var sw = new StreamWriter(fileName))
+                using (var sw = new StreamWriter(cacheFilePath))
                 {
                     var csvWriter = new CsvWriter(sw);
                     csvWriter.Configuration.Delimiter = ",";
@@ -73,52 +80,19 @@ namespace OberloScraper
                     csvWriter.WriteRecords(oberloOrders);
                 }
 
-                Console.Out.WriteLine("Successfully wrote file to {0}", fileName);
+                Console.Out.WriteLine("Successfully wrote file to {0}", cacheFilePath);
                 return oberloOrders;
             }
         }
 
-        static KeyValuePair<DateTime, string> FindLastCacheFile(string directoryPath, string filePrefix)
-        {
-            var dateDictonary = new SortedDictionary<DateTime, string>();
-
-            string dateFromToRegex = @"(\d{4}\-\d{2}\-\d{2})\-(\d{4}\-\d{2}\-\d{2})\.csv$";
-            string regexp = string.Format("{0} {1}", filePrefix, dateFromToRegex);
-            Regex reg = new Regex(regexp);
-
-            string directorySearchPattern = string.Format("{0}*", filePrefix);
-            IEnumerable<string> fileNames = Directory.EnumerateFiles(directoryPath, directorySearchPattern);
-            foreach (var fileName in fileNames)
-            {
-                var match = reg.Match(fileName);
-                if (match.Success)
-                {
-                    var from = match.Groups[1].Value;
-                    var to = match.Groups[2].Value;
-
-                    var dateTo = DateTime.ParseExact(to, "yyyy-MM-dd", CultureInfo.InvariantCulture);
-                    dateDictonary.Add(dateTo, fileName);
-                }
-            }
-
-            if (dateDictonary.Count() > 0)
-            {
-                // the first element is the newest date
-                return dateDictonary.Last();
-            }
-
-            // return a default key value pair
-            return default(KeyValuePair<DateTime, string>);
-        }
-
-        static List<OberloOrder> GetOberloCacheFile(string fileName, bool forceUpdate = false)
+        static List<OberloOrder> GetOberloCacheFile(string filePath, bool forceUpdate = false)
         {
             // force update even if cache file exists
             if (forceUpdate) return null;
 
-            if (File.Exists(fileName))
+            if (File.Exists(filePath))
             {
-                using (TextReader fileReader = File.OpenText(fileName))
+                using (TextReader fileReader = File.OpenText(filePath))
                 {
                     using (var csvReader = new CsvReader(fileReader))
                     {
@@ -143,7 +117,8 @@ namespace OberloScraper
             ChromeOptions options = new ChromeOptions();
             string userDataArgument = string.Format("user-data-dir={0}", userDataDir);
             options.AddArguments(userDataArgument);
-            //options.AddArguments("--start-maximized");
+            options.AddArguments("--start-maximized");
+            options.AddArgument("--log-level=3");
             //options.AddArgument("--headless");
             IWebDriver driver = new ChromeDriver(options);
 

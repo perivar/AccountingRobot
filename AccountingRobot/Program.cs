@@ -1,4 +1,5 @@
-﻿using CsvHelper;
+﻿using AliOrderScraper;
+using CsvHelper;
 using OberloScraper;
 using System;
 using System.Collections.Generic;
@@ -136,17 +137,13 @@ namespace AccountingRobot
             var from = new DateTime(currentYear, 1, 1);
             var to = currentDate;
 
-            string userDataDir = ConfigurationManager.AppSettings["UserDataDir"];
-            string oberloUsername = ConfigurationManager.AppSettings["OberloUsername"];
-            string oberloPassword = ConfigurationManager.AppSettings["OberloPassword"];
-
             string skandiabankenXLSX = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\97132735232_2017_01_01-2017_12_15.xlsx";
-            string aliExpressCSV = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\AliExpressOrders-2017-12-18_08-04.csv";
+            //string aliExpressCSV = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\AliExpressOrders-2017-12-18_08-04.csv";
             //string oberloCSV = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\Oberlo Orders 2017-01-01-2017-12-18.csv";
 
             // prepopulate some lookup lists
-            var oberloOrders = Oberlo.GetLatestOberloOrders(userDataDir, oberloUsername, oberloPassword);
-            var aliExpressOrders = AliExpress.ReadOrders(aliExpressCSV);
+            var oberloOrders = Oberlo.GetLatestOberloOrders();
+            var aliExpressOrders = AliExpress.GetLatestAliExpressOrders();
             var aliExpressOrderGroups = AliExpress.CombineOrders(aliExpressOrders);
 
             // run through the bank account transactions
@@ -288,7 +285,7 @@ namespace AccountingRobot
                     }
                     else
                     {
-                        Console.WriteLine("\tERROR: NONE FOUND!");
+                        Console.WriteLine("\tERROR: NONE SHOPIFY ORDER FOUND!");
                         accountingItem.ErrorMessage = "Shopify: No orders found";
                         accountingItem.NumPurchase = "NOT FOUND";
                     }
@@ -348,18 +345,13 @@ namespace AccountingRobot
         {
             var accountingList = new List<AccountingItem>();
 
-            // prepopulate some lookup lists
+            // prepopulate lookup lists
             Console.Out.WriteLine("Prepopulating Lookup Lists ...");
-            // get stripe configuration parameters
-            string stripeApiKey = ConfigurationManager.AppSettings["StripeApiKey"];
-            var stripeTransactions = Stripe.GetCharges(stripeApiKey);
+
+            var stripeTransactions = Stripe.GetLatestStripeTransactions();
             Console.Out.WriteLine("Successfully read Stripe transactions ...");
 
-            // get paypal configuration parameters
-            string payPalApiUsername = ConfigurationManager.AppSettings["PayPalApiUsername"];
-            string payPalApiPassword = ConfigurationManager.AppSettings["PayPalApiPassword"];
-            string payPalApiSignature = ConfigurationManager.AppSettings["PayPalApiSignature"];
-            var paypalTransactions = Paypal.GetTransactions(payPalApiUsername, payPalApiPassword, payPalApiSignature);
+            var paypalTransactions = Paypal.GetTransactions();
             Console.Out.WriteLine("Successfully read PayPal transactions ...");
 
             // get shopify configuration parameters
@@ -416,8 +408,8 @@ namespace AccountingRobot
                         from transaction in stripeTransactions
                         where
                         transaction.Paid &&
-                        transaction.Metadata["email"].Equals(shopifyOrder.CustomerEmail) &&
-                        transaction.Amount == (int)(shopifyOrder.TotalPrice * 100) &&
+                        transaction.CustomerEmail.Equals(shopifyOrder.CustomerEmail) &&
+                        transaction.Amount == shopifyOrder.TotalPrice &&
                          (transaction.Created.Date >= startDate.Date && transaction.Created.Date <= endDate.Date)
                         orderby transaction.Created ascending
                         select transaction;
@@ -432,9 +424,9 @@ namespace AccountingRobot
                         {
                             // one match
                             var stripeTransaction = stripeQuery.First();
-                            decimal amount = (decimal)stripeTransaction.Amount / 100;
-                            decimal net = (decimal)stripeTransaction.BalanceTransaction.Net / 100;
-                            decimal fee = (decimal)stripeTransaction.BalanceTransaction.Fee / 100;
+                            decimal amount = stripeTransaction.Amount;
+                            decimal net = stripeTransaction.Net;
+                            decimal fee = stripeTransaction.Fee;
 
                             accountingItem.FeesStripe = fee;
                             accountingItem.AccountStripe = net;
