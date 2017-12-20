@@ -29,6 +29,7 @@ namespace AccountingRobot
             var fileName = string.Format("Accounting {0:yyyy-MM-dd}.xlsx", now);
 
             DataTable dt = new DataTable();
+            dt.Columns.Add("Control", typeof(String));
             dt.Columns.Add("Periode", typeof(int));
             dt.Columns.Add("Date", typeof(DateTime));
             dt.Columns.Add("Number", typeof(int));
@@ -83,7 +84,9 @@ namespace AccountingRobot
 
             foreach (var accountingItem in accountingItems)
             {
-                dt.Rows.Add(accountingItem.Periode,
+                dt.Rows.Add(
+                    "",
+                    accountingItem.Periode,
                     accountingItem.Date,
                     accountingItem.Number,
                     accountingItem.ArchiveReference,
@@ -142,17 +145,46 @@ namespace AccountingRobot
             {
                 var ws = wb.Worksheets.Add(dt, "Accounting");
 
+                // set formulas
+                // get all rows in my datatable 
+                int totalRows = dt.Rows.Count;
+
+                // set the first that will be filled with data
+                int currentRow = 2;
+
+                //loop through each row.
+                for (int i = 0; i < totalRows; i++)
+                {              
+                    // the current cell will be whatever column you wish to format + the current row
+                    string currentCell = "A" + currentRow;
+
+                    // create your formula
+                    string AdjustedPriceFormula = "=IF(AX" + currentRow + "=0,\" \",\"!!FEIL!!\")";
+
+                    // apply your formula to the cell.
+                    ws.Cells(currentCell).FormulaA1 = AdjustedPriceFormula;
+
+                    // increment your counters to apply the same data to the following row
+                    currentRow++;
+                }
+
+                // set background color
+                var col1 = ws.Column("T");
+                col1.Style.Fill.BackgroundColor = XLColor.LightGreen;
+                var col2 = ws.Column("U");
+                col2.Style.Fill.BackgroundColor = XLColor.LightGreen;
+
                 // set formats
-                ws.Range("B2:B9999").Style.NumberFormat.Format = "dd.MM.yyyy";
-                ws.Range("D2:D9999").Style.NumberFormat.Format = "####################";
+                ws.Range("C2:C9999").Style.NumberFormat.Format = "dd.MM.yyyy";
+                ws.Range("E2:E9999").Style.NumberFormat.Format = "####################";
 
                 // Custom formats for numbers in Excel are entered in this format:
                 // positive number format;negative number format;zero format;text format
-                ws.Range("M2:M9999").Style.NumberFormat.Format = "#,##0.00;[Red]-#,##0.00;";
-                ws.Range("M2:M9999").DataType = XLCellValues.Number;
+                ws.Range("N2:N9999").Style.NumberFormat.Format = "#,##0.00;[Red]-#,##0.00;";
+                ws.Range("N2:N9999").DataType = XLCellValues.Number;
 
                 // set style and format for the decimal range
-                var decimalRange = ws.Range("O2:AQ9999");
+                var decimalRange = ws.Range("P2:AR9999");
                 decimalRange.Style.NumberFormat.Format = "#,##0.00;[Red]-#,##0.00;";
                 decimalRange.DataType = XLCellValues.Number;
 
@@ -364,6 +396,9 @@ namespace AccountingRobot
                             break;
                         case SkandiabankenTransaction.AccountingTypeEnum.CostOfTryouts:
                             accountingItem.CostOfGoods = -skandiabankenTransaction.AccountChange;
+                            break;
+                        case SkandiabankenTransaction.AccountingTypeEnum.IncomeInterest:
+                            accountingItem.IncomeFinance = -skandiabankenTransaction.AccountChange;
                             break;
                     }
                 }

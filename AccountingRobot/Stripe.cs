@@ -237,7 +237,7 @@ namespace AccountingRobot
                 }
 
                 allCharges.AddRange(charges);
-                lastId = charges.LastOrDefault().Id;
+                if (allCharges.Count() > 0) lastId = charges.LastOrDefault().Id;
             }
 
             var stripeTransactions = new List<StripeTransaction>();
