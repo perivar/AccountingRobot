@@ -89,7 +89,7 @@ namespace AccountingRobot
             return allCharges;
         }
 
-        public static List<StripeTransaction> GetLatestStripeTransactions()
+        public static List<StripeTransaction> GetLatestStripeTransactions(bool forceUpdate = false)
         {
             // get stripe configuration parameters
             string stripeApiKey = ConfigurationManager.AppSettings["StripeApiKey"];
@@ -98,6 +98,10 @@ namespace AccountingRobot
 
             var lastCacheFile = Utils.FindLastCacheFile(cacheDir, cacheFileNamePrefix);
 
+            var currentDate = DateTime.Now.Date;
+            var firstDayOfTheYear = new DateTime(currentDate.Year, 1, 1);
+            var lastDayOfTheYear = new DateTime(currentDate.Year, 12, 31);
+
             // check if we have a cache file
             DateTime from = default(DateTime);
             DateTime to = default(DateTime);
@@ -105,67 +109,69 @@ namespace AccountingRobot
             // if the cache file object has values
             if (!lastCacheFile.Equals(default(KeyValuePair<DateTime, string>)))
             {
-                var currentDate = DateTime.Now.Date;
                 from = lastCacheFile.Key.Date;
                 to = currentDate;
 
-                // check that the from date isn't today
+                // if the from date is today, then we already have an updated file so use cache
                 if (from.Equals(to))
                 {
-                    Console.Out.WriteLine("Latest Stripe cache file is from today.");
-                    return GetStripeTransactionsCacheFile(lastCacheFile.Value);
+                    // use latest cache file (or force an update)
+                    return GetStripeTransactions(lastCacheFile.Value, stripeApiKey, from, to, forceUpdate);
+                }
+                else if (from != firstDayOfTheYear)
+                {
+                    // we have to combine two files:
+                    // the original cache file and the new transactions file
+                    Console.Out.WriteLine("Finding Stripe transactions from {0:yyyy-MM-dd} to {1:yyyy-MM-dd}", from, to);
+                    var newStripeTransactions = GetStripeTransactions(stripeApiKey, from, to);
+                    var originalStripeTransactions = Utils.ReadCacheFile<StripeTransaction>(lastCacheFile.Value);
+
+                    // copy all the original stripe transactions into a new file, except entries that are 
+                    // from the from date or newer
+                    var updatedStripeTransactions = originalStripeTransactions.Where(p => p.Created < from).ToList();
+
+                    // and add the new transactions to beginning of list
+                    updatedStripeTransactions.InsertRange(0, newStripeTransactions);
+
+                    // and store to new file
+                    string newCacheFilePath = Path.Combine(cacheDir, string.Format("{0}-{1:yyyy-MM-dd}-{2:yyyy-MM-dd}.csv", cacheFileNamePrefix, firstDayOfTheYear, to));
+                    using (var sw = new StreamWriter(newCacheFilePath))
+                    {
+                        var csvWriter = new CsvWriter(sw);
+                        csvWriter.Configuration.Delimiter = ",";
+                        csvWriter.Configuration.HasHeaderRecord = true;
+                        csvWriter.Configuration.CultureInfo = CultureInfo.InvariantCulture;
+
+                        csvWriter.WriteRecords(updatedStripeTransactions);
+                    }
+
+                    Console.Out.WriteLine("Successfully wrote file to {0}", newCacheFilePath);
+                    return updatedStripeTransactions;
                 }
             }
             else
             {
                 // find all from beginning of year until now
-                var currentDate = DateTime.Now.Date;
-                var currentYear = currentDate.Year;
-                from = new DateTime(currentYear, 1, 1);
+                from = firstDayOfTheYear;
                 to = currentDate;
             }
 
-            Console.Out.WriteLine("Finding Stripe transactions from {0:yyyy-MM-dd} to {1:yyyy-MM-dd}", from, to);
-            return GetStripeTransactions(cacheDir, cacheFileNamePrefix, stripeApiKey, from, to, false);
-        }
-
-        static List<StripeTransaction> GetStripeTransactionsCacheFile(string filePath, bool forceUpdate = false)
-        {
-            // force update even if cache file exists
-            if (forceUpdate) return null;
-
-            if (File.Exists(filePath))
-            {
-                using (TextReader fileReader = File.OpenText(filePath))
-                {
-                    using (var csvReader = new CsvReader(fileReader))
-                    {
-                        csvReader.Configuration.Delimiter = ",";
-                        csvReader.Configuration.HasHeaderRecord = true;
-                        csvReader.Configuration.CultureInfo = CultureInfo.InvariantCulture;
-
-                        return csvReader.GetRecords<StripeTransaction>().ToList<StripeTransaction>();
-                    }
-                }
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        static List<StripeTransaction> GetStripeTransactions(string cacheDir, string cacheFileNamePrefix, string stripeApiKey, DateTime from, DateTime to, bool forceUpdate = false)
-        {
+            // get updated transactions (or from cache file if update is forced)
             string cacheFilePath = Path.Combine(cacheDir, string.Format("{0}-{1:yyyy-MM-dd}-{2:yyyy-MM-dd}.csv", cacheFileNamePrefix, from, to));
+            return GetStripeTransactions(cacheFilePath, stripeApiKey, from, to, forceUpdate);
+        }
 
-            var cachedStripeTransactions = GetStripeTransactionsCacheFile(cacheFilePath, forceUpdate);
+        static List<StripeTransaction> GetStripeTransactions(string cacheFilePath, string stripeApiKey, DateTime from, DateTime to, bool forceUpdate = false)
+        {
+            var cachedStripeTransactions = Utils.ReadCacheFile<StripeTransaction>(cacheFilePath, forceUpdate);
             if (cachedStripeTransactions != null && cachedStripeTransactions.Count() > 0)
             {
-                Console.Out.WriteLine("Found cached file.");
+                Console.Out.WriteLine("Using cache file {0}.", cacheFilePath);
                 return cachedStripeTransactions;
             }
             else
             {
+                Console.Out.WriteLine("Finding Stripe transactions from {0:yyyy-MM-dd} to {1:yyyy-MM-dd}", from, to);
                 var stripeTransactions = GetStripeTransactions(stripeApiKey, from, to);
 
                 using (var sw = new StreamWriter(cacheFilePath))

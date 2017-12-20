@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CsvHelper;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -46,6 +47,31 @@ namespace AccountingRobot
 
             // return a default key value pair
             return default(KeyValuePair<DateTime, string>);
+        }
+
+        public static List<T> ReadCacheFile<T>(string filePath, bool forceUpdate = false)
+        {
+            // force update even if cache file exists
+            if (forceUpdate) return null;
+
+            if (File.Exists(filePath))
+            {
+                using (TextReader fileReader = File.OpenText(filePath))
+                {
+                    using (var csvReader = new CsvReader(fileReader))
+                    {
+                        csvReader.Configuration.Delimiter = ",";
+                        csvReader.Configuration.HasHeaderRecord = true;
+                        csvReader.Configuration.CultureInfo = CultureInfo.InvariantCulture;
+
+                        return csvReader.GetRecords<T>().ToList();
+                    }
+                }
+            }
+            else
+            {
+                return null;
+            }
         }
     }
 }
