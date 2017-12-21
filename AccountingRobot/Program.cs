@@ -30,6 +30,7 @@ namespace AccountingRobot
 
             DataTable dt = new DataTable();
             dt.Columns.Add("Control", typeof(String));
+
             dt.Columns.Add("Periode", typeof(int));
             dt.Columns.Add("Date", typeof(DateTime));
             dt.Columns.Add("Number", typeof(int));
@@ -45,42 +46,50 @@ namespace AccountingRobot
             dt.Columns.Add("PurchaseOtherCurrency", typeof(decimal));
             dt.Columns.Add("OtherCurrency", typeof(string));
 
-            dt.Columns.Add("AccountPaypal", typeof(decimal));  // 1910
-            dt.Columns.Add("AccountStripe", typeof(decimal));  // 1915
-            dt.Columns.Add("AccountVipps", typeof(decimal));   // 1918
-            dt.Columns.Add("AccountBank", typeof(decimal));    // 1920
+            dt.Columns.Add("AccountPaypal", typeof(decimal));           // 1910
+            dt.Columns.Add("AccountStripe", typeof(decimal));           // 1915
+            dt.Columns.Add("AccountVipps", typeof(decimal));            // 1918
+            dt.Columns.Add("AccountBank", typeof(decimal));             // 1920
 
             dt.Columns.Add("VATPurchase", typeof(decimal));
             dt.Columns.Add("VATSales", typeof(decimal));
 
-            dt.Columns.Add("SalesVAT", typeof(decimal));       // 3000
-            dt.Columns.Add("SalesVATExempt", typeof(decimal)); // 3100
+            dt.Columns.Add("SalesVAT", typeof(decimal));                // 3000
+            dt.Columns.Add("SalesVATExempt", typeof(decimal));          // 3100
 
-            dt.Columns.Add("CostOfGoods", typeof(decimal));            // 4005
-            dt.Columns.Add("CostForReselling", typeof(decimal));       // 4300
-            dt.Columns.Add("CostForSalary", typeof(decimal));          // 5000
-            dt.Columns.Add("CostForSalaryTax", typeof(decimal));       // 5400
-            dt.Columns.Add("CostForDepreciation", typeof(decimal));    // 6000
-            dt.Columns.Add("CostForShipping", typeof(decimal));        // 6100
-            dt.Columns.Add("CostForElectricity", typeof(decimal));     // 6340 
-            dt.Columns.Add("CostForToolsInventory", typeof(decimal));      // 6500
-            dt.Columns.Add("CostForMaintenance", typeof(decimal));         // 6695
-            dt.Columns.Add("CostForFacilities", typeof(decimal));          // 6800 
+            dt.Columns.Add("CostOfGoods", typeof(decimal));             // 4005
+            dt.Columns.Add("CostForReselling", typeof(decimal));        // 4300
+            dt.Columns.Add("CostForSalary", typeof(decimal));           // 5000
+            dt.Columns.Add("CostForSalaryTax", typeof(decimal));        // 5400
+            dt.Columns.Add("CostForDepreciation", typeof(decimal));     // 6000
+            dt.Columns.Add("CostForShipping", typeof(decimal));         // 6100
+            dt.Columns.Add("CostForElectricity", typeof(decimal));      // 6340 
+            dt.Columns.Add("CostForToolsInventory", typeof(decimal));   // 6500
+            dt.Columns.Add("CostForMaintenance", typeof(decimal));      // 6695
+            dt.Columns.Add("CostForFacilities", typeof(decimal));       // 6800 
 
-            dt.Columns.Add("CostOfData", typeof(decimal));                 // 6810 
-            dt.Columns.Add("CostOfPhoneInternet", typeof(decimal));        // 6900
-            dt.Columns.Add("CostForTravelAndAllowance", typeof(decimal));  // 7140
-            dt.Columns.Add("CostOfAdvertising", typeof(decimal));          // 7330
-            dt.Columns.Add("CostOfOther", typeof(decimal));                // 7700
+            dt.Columns.Add("CostOfData", typeof(decimal));              // 6810 
+            dt.Columns.Add("CostOfPhoneInternet", typeof(decimal));     // 6900
+            dt.Columns.Add("CostForTravelAndAllowance", typeof(decimal));// 7140
+            dt.Columns.Add("CostOfAdvertising", typeof(decimal));       // 7330
+            dt.Columns.Add("CostOfOther", typeof(decimal));             // 7700
 
-            dt.Columns.Add("FeesBank", typeof(decimal));                   // 7770
-            dt.Columns.Add("FeesPaypal", typeof(decimal));                 // 7780
-            dt.Columns.Add("FeesStripe", typeof(decimal));                 // 7785 
+            dt.Columns.Add("FeesBank", typeof(decimal));                // 7770
+            dt.Columns.Add("FeesPaypal", typeof(decimal));              // 7780
+            dt.Columns.Add("FeesStripe", typeof(decimal));              // 7785 
 
-            dt.Columns.Add("CostForEstablishment", typeof(decimal));       // 7790
+            dt.Columns.Add("CostForEstablishment", typeof(decimal));    // 7790
 
-            dt.Columns.Add("IncomeFinance", typeof(decimal));              // 8099
-            dt.Columns.Add("CostOfFinance", typeof(decimal));              // 8199
+            dt.Columns.Add("IncomeFinance", typeof(decimal));           // 8099
+            dt.Columns.Add("CostOfFinance", typeof(decimal));           // 8199
+
+            dt.Columns.Add("Investments", typeof(decimal));             // 1200
+            dt.Columns.Add("AccountsReceivable", typeof(decimal));      // 1500
+            dt.Columns.Add("PersonalWithdrawal", typeof(decimal));
+            dt.Columns.Add("PersonalDeposit", typeof(decimal));
+
+            dt.Columns.Add("SumPreRounding", typeof(decimal));
+            dt.Columns.Add("SumRounded", typeof(decimal));
 
             foreach (var accountingItem in accountingItems)
             {
@@ -136,7 +145,12 @@ namespace AccountingRobot
                     accountingItem.CostForEstablishment,        // 7790
 
                     accountingItem.IncomeFinance,               // 8099
-                    accountingItem.CostOfFinance                // 8199
+                    accountingItem.CostOfFinance,               // 8199
+
+                    accountingItem.Investments,                 // 1200
+                    accountingItem.AccountsReceivable,          // 1500
+                    accountingItem.PersonalWithdrawal,
+                    accountingItem.PersonalDeposit
                     );
             }
 
@@ -152,29 +166,40 @@ namespace AccountingRobot
                 // set the first that will be filled with data
                 int currentRow = 2;
 
-                //loop through each row.
+                // loop through each row.
                 for (int i = 0; i < totalRows; i++)
-                {              
-                    // the current cell will be whatever column you wish to format + the current row
-                    string currentCell = "A" + currentRow;
+                {
+                    // create formulas
+                    string controlFormula = string.Format("=IF(AX{0}=0,\" \",\"!!FEIL!!\")", currentRow);
+                    string sumPreRoundingFormula = string.Format("=SUM(P{0}:AV{0})", currentRow);
+                    string sumRoundedFormula = string.Format("=ROUND(AW{0},2)", currentRow);
 
-                    // create your formula
-                    string AdjustedPriceFormula = "=IF(AX" + currentRow + "=0,\" \",\"!!FEIL!!\")";
-
-                    // apply your formula to the cell.
-                    ws.Cells(currentCell).FormulaA1 = AdjustedPriceFormula;
+                    // apply formulas to cells.
+                    ws.Cells(string.Format("A{0}", currentRow)).FormulaA1 = controlFormula;
+                    ws.Cells(string.Format("AW{0}", currentRow)).FormulaA1 = sumPreRoundingFormula;
+                    ws.Cells(string.Format("AX{0}", currentRow)).FormulaA1 = sumRoundedFormula;
 
                     // increment your counters to apply the same data to the following row
                     currentRow++;
                 }
 
-                // set background color
-                var col1 = ws.Column("T");
-                col1.Style.Fill.BackgroundColor = XLColor.LightGreen;
-                var col2 = ws.Column("U");
-                col2.Style.Fill.BackgroundColor = XLColor.LightGreen;
+                // set font color for control column
+                ws.Columns("A").Style.Font.FontColor = XLColor.Red;
+                ws.Columns("A").Style.Font.Bold = true;
+               
+                // set background color for VAT
+                var lightGreen = XLColor.FromArgb(0xD8E4BC);
+                ws.Columns("T:U").Style.Fill.BackgroundColor = lightGreen;
 
-                // set formats
+                // set background color for investments, withdrawal and deposits
+                var lightBlue = XLColor.FromArgb(0xC5D9F1);
+                ws.Columns("AS:AV").Style.Fill.BackgroundColor = lightBlue;
+
+                // set background color for control sum
+                var lightRed = XLColor.FromArgb(0xE6B8B7);
+                ws.Columns("AX").Style.Fill.BackgroundColor = lightRed;
+
+                // set column formats
                 ws.Range("C2:C9999").Style.NumberFormat.Format = "dd.MM.yyyy";
                 ws.Range("E2:E9999").Style.NumberFormat.Format = "####################";
 
@@ -184,7 +209,7 @@ namespace AccountingRobot
                 ws.Range("N2:N9999").DataType = XLCellValues.Number;
 
                 // set style and format for the decimal range
-                var decimalRange = ws.Range("P2:AR9999");
+                var decimalRange = ws.Range("P2:AX9999");
                 decimalRange.Style.NumberFormat.Format = "#,##0.00;[Red]-#,##0.00;";
                 decimalRange.DataType = XLCellValues.Number;
 
@@ -216,7 +241,15 @@ namespace AccountingRobot
             {
                 // define accounting item
                 var accountingItem = new AccountingItem();
-                accountingItem.Date = skandiabankenTransaction.TransactionDate;
+
+                // set date to closer to midnight
+                //accountingItem.Date = skandiabankenTransaction.TransactionDate;
+                accountingItem.Date = new DateTime(
+                    skandiabankenTransaction.TransactionDate.Year,
+                    skandiabankenTransaction.TransactionDate.Month, 
+                    skandiabankenTransaction.TransactionDate.Day,
+                    23, 59, 00);
+
                 accountingItem.ArchiveReference = skandiabankenTransaction.ArchiveReference;
                 accountingItem.Type = skandiabankenTransaction.Type;
 

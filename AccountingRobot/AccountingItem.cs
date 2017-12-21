@@ -24,24 +24,24 @@ namespace AccountingRobot
         public decimal PurchaseOtherCurrency { get; set; }
         public string OtherCurrency { get; set; }
 
-        public decimal AccountPaypal { get; set; }  // 1910
-        public decimal AccountStripe { get; set; }  // 1915
-        public decimal AccountVipps { get; set; }   // 1918
-        public decimal AccountBank { get; set; }    // 1920
+        public decimal AccountPaypal { get; set; }              // 1910
+        public decimal AccountStripe { get; set; }              // 1915
+        public decimal AccountVipps { get; set; }               // 1918
+        public decimal AccountBank { get; set; }                // 1920
 
         public decimal VATPurchase { get; set; }
         public decimal VATSales { get; set; }
 
-        public decimal SalesVAT { get; set; }       // 3000
-        public decimal SalesVATExempt { get; set; } // 3100
+        public decimal SalesVAT { get; set; }                   // 3000
+        public decimal SalesVATExempt { get; set; }             // 3100
 
-        public decimal CostOfGoods { get; set; }            // 4005
-        public decimal CostForReselling { get; set; }       // 4300
-        public decimal CostForSalary { get; set; }          // 5000
-        public decimal CostForSalaryTax { get; set; }       // 5400
-        public decimal CostForDepreciation { get; set; }    // 6000
-        public decimal CostForShipping { get; set; }        // 6100
-        public decimal CostForElectricity { get; set; }     // 6340 
+        public decimal CostOfGoods { get; set; }                // 4005
+        public decimal CostForReselling { get; set; }           // 4300
+        public decimal CostForSalary { get; set; }              // 5000
+        public decimal CostForSalaryTax { get; set; }           // 5400
+        public decimal CostForDepreciation { get; set; }        // 6000
+        public decimal CostForShipping { get; set; }            // 6100
+        public decimal CostForElectricity { get; set; }         // 6340 
         public decimal CostForToolsInventory { get; set; }      // 6500
         public decimal CostForMaintenance { get; set; }         // 6695
         public decimal CostForFacilities { get; set; }          // 6800 
@@ -60,8 +60,13 @@ namespace AccountingRobot
 
         public decimal IncomeFinance { get; set; }              // 8099
         public decimal CostOfFinance { get; set; }              // 8199
+
+        public decimal Investments { get; set; }                // 1200
+        public decimal AccountsReceivable { get; set; }         // 1500
+        public decimal PersonalWithdrawal { get; set; }
+        public decimal PersonalDeposit { get; set; }
     }
-    
+
     public sealed class AccountingItemCsvMap : ClassMap<AccountingItem>
     {
         public AccountingItemCsvMap()
@@ -119,6 +124,11 @@ namespace AccountingRobot
 
             Map(m => m.IncomeFinance);
             Map(m => m.CostOfFinance);
+
+            Map(m => m.Investments);
+            Map(m => m.AccountsReceivable);
+            Map(m => m.PersonalWithdrawal);
+            Map(m => m.PersonalDeposit);
         }
     }
 }
