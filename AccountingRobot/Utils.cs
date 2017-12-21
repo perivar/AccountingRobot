@@ -15,16 +15,21 @@ namespace AccountingRobot
             return text.IndexOf(value, stringComparison) >= 0;
         }
 
-        public static KeyValuePair<DateTime, string> FindLastCacheFile(string directoryPath, string filePrefix)
+        public static KeyValuePair<DateTime, string> FindLastCacheFile(string cacheDir, string cacheFileNamePrefix)
+        {
+            string dateFromToRegexPattern = @"(\d{4}\-\d{2}\-\d{2})\-(\d{4}\-\d{2}\-\d{2})\.csv$";
+            return FindLastCacheFile(cacheDir, cacheFileNamePrefix, dateFromToRegexPattern, "yyyy-MM-dd", "\\-");
+        }
+
+        public static KeyValuePair<DateTime, string> FindLastCacheFile(string cacheDir, string cacheFileNamePrefix, string dateFromToRegexPattern, string dateParsePattern, string separator)
         {
             var dateDictonary = new SortedDictionary<DateTime, string>();
 
-            string dateFromToRegex = @"(\d{4}\-\d{2}\-\d{2})\-(\d{4}\-\d{2}\-\d{2})\.csv$";
-            string regexp = string.Format("{0}\\-{1}", filePrefix, dateFromToRegex);
+            string regexp = string.Format("{0}{1}{2}", cacheFileNamePrefix, separator, dateFromToRegexPattern);
             Regex reg = new Regex(regexp);
 
-            string directorySearchPattern = string.Format("{0}*", filePrefix);
-            IEnumerable<string> filePaths = Directory.EnumerateFiles(directoryPath, directorySearchPattern);
+            string directorySearchPattern = string.Format("{0}*", cacheFileNamePrefix);
+            IEnumerable<string> filePaths = Directory.EnumerateFiles(cacheDir, directorySearchPattern);
             foreach (var filePath in filePaths)
             {
                 var fileName = Path.GetFileName(filePath);
@@ -34,7 +39,7 @@ namespace AccountingRobot
                     var from = match.Groups[1].Value;
                     var to = match.Groups[2].Value;
 
-                    var dateTo = DateTime.ParseExact(to, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+                    var dateTo = DateTime.ParseExact(to, dateParsePattern, CultureInfo.InvariantCulture);
                     dateDictonary.Add(dateTo, filePath);
                 }
             }

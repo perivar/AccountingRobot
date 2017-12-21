@@ -14,9 +14,28 @@ namespace AccountingRobot
         static void Main(string[] args)
         {
             // process the transactions and create accounting overview
-            string skandiabankenXLSX = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\97132735232_2017_01_01-2017_12_18.xlsx";
             var accountingShopifyItems = ProcessShopifyStatement();
-            var accountingBankItems = ProcessBankAccountStatement(skandiabankenXLSX);
+
+            // find latest skandiabanken transaction spreadsheet
+            var accountingBankItems = default(List<AccountingItem>);
+            string cacheDir = ConfigurationManager.AppSettings["CacheDir"];
+            string cacheFileNamePrefix = "97132735232";
+            string dateFromToRegexPattern = @"(\d{4}_\d{2}_\d{2})\-(\d{4}_\d{2}_\d{2})\.xlsx$";
+            var lastCacheFile = Utils.FindLastCacheFile(cacheDir, cacheFileNamePrefix, dateFromToRegexPattern, "yyyy_MM_dd", "_");
+
+            // if the cache file object has values
+            if (!lastCacheFile.Equals(default(KeyValuePair<DateTime, string>)))
+            {
+                //accountingBankItems = Utils.ReadCacheFile<AccountingItem>(lastCacheFile.Value);
+                accountingBankItems = ProcessBankAccountStatement(lastCacheFile.Value);
+            }
+            else
+            {
+                Console.Out.WriteLine("Error! No SBanken transaction file found!.");
+                return; 
+                //string skandiabankenXLSX = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\97132735232_2017_01_01-2017_12_20.xlsx";
+                //accountingBankItems = ProcessBankAccountStatement(skandiabankenXLSX);
+            }
 
             // merge into one list
             accountingShopifyItems.AddRange(accountingBankItems);
@@ -430,8 +449,14 @@ namespace AccountingRobot
                         case SkandiabankenTransaction.AccountingTypeEnum.CostOfTryouts:
                             accountingItem.CostOfGoods = -skandiabankenTransaction.AccountChange;
                             break;
+                        case SkandiabankenTransaction.AccountingTypeEnum.CostOfBank:
+                            accountingItem.CostOfFinance = -skandiabankenTransaction.AccountChange;
+                            break;
                         case SkandiabankenTransaction.AccountingTypeEnum.IncomeInterest:
                             accountingItem.IncomeFinance = -skandiabankenTransaction.AccountChange;
+                            break;
+                        case SkandiabankenTransaction.AccountingTypeEnum.IncomeReturn:
+                            accountingItem.CostForReselling = -skandiabankenTransaction.AccountChange;
                             break;
                     }
                 }
