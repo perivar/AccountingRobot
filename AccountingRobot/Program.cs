@@ -26,13 +26,12 @@ namespace AccountingRobot
             // if the cache file object has values
             if (!lastCacheFile.Equals(default(KeyValuePair<DateTime, string>)))
             {
-                //accountingBankItems = Utils.ReadCacheFile<AccountingItem>(lastCacheFile.Value);
                 accountingBankItems = ProcessBankAccountStatement(lastCacheFile.Value);
             }
             else
             {
                 Console.Out.WriteLine("Error! No SBanken transaction file found!.");
-                return; 
+                return;
                 //string skandiabankenXLSX = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\97132735232_2017_01_01-2017_12_20.xlsx";
                 //accountingBankItems = ProcessBankAccountStatement(skandiabankenXLSX);
             }
@@ -205,7 +204,7 @@ namespace AccountingRobot
                 // set font color for control column
                 ws.Columns("A").Style.Font.FontColor = XLColor.Red;
                 ws.Columns("A").Style.Font.Bold = true;
-               
+
                 // set background color for VAT
                 var lightGreen = XLColor.FromArgb(0xD8E4BC);
                 ws.Columns("T:U").Style.Fill.BackgroundColor = lightGreen;
@@ -253,7 +252,8 @@ namespace AccountingRobot
             var aliExpressOrderGroups = AliExpress.CombineOrders(aliExpressOrders);
 
             // run through the bank account transactions
-            var skandiabankenTransactions = Skandiabanken.ReadTransactions(skandiabankenXLSX);
+            //var skandiabankenTransactions = Skandiabanken.ReadTransactions(skandiabankenXLSX);
+            var skandiabankenTransactions = Skandiabanken.ReadTransactions2(skandiabankenXLSX);
 
             // and map each one to the right meta information
             foreach (var skandiabankenTransaction in skandiabankenTransactions)
@@ -265,7 +265,7 @@ namespace AccountingRobot
                 //accountingItem.Date = skandiabankenTransaction.TransactionDate;
                 accountingItem.Date = new DateTime(
                     skandiabankenTransaction.TransactionDate.Year,
-                    skandiabankenTransaction.TransactionDate.Month, 
+                    skandiabankenTransaction.TransactionDate.Month,
                     skandiabankenTransaction.TransactionDate.Day,
                     23, 59, 00);
 
@@ -574,9 +574,15 @@ namespace AccountingRobot
                         let timestamp = transaction.Timestamp
                         where
                         transaction.Status.Equals("Completed")
-                        && (null != transaction.Payer && transaction.Payer.Equals(shopifyOrder.CustomerEmail))
+                        //&& (null != transaction.Payer && transaction.Payer.Equals(shopifyOrder.CustomerEmail))
+                        && (
+                        (null != transaction.PayerDisplayName && transaction.PayerDisplayName.Equals(shopifyOrder.CustomerName, StringComparison.InvariantCultureIgnoreCase))
+                        || 
+                        (null != transaction.Payer && transaction.Payer.Equals(shopifyOrder.CustomerEmail, StringComparison.InvariantCultureIgnoreCase))
+                        )
                         && (grossAmount == shopifyOrder.TotalPrice)
                         && (timestamp.Date >= startDate.Date && timestamp.Date <= endDate.Date)
+                        //&& (timestamp.Date == shopifyOrder.ProcessedAt.Date)
                         orderby timestamp ascending
                         select transaction;
 
