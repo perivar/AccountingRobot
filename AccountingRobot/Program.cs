@@ -42,10 +42,16 @@ namespace AccountingRobot
             // and sort (by ascending)
             var accountingItems = accountingShopifyItems.OrderBy(o => o.Date).ToList();
 
-            // and store in file
+            // export to excel file
             var now = DateTime.Now;
             var fileName = string.Format("Accounting {0:yyyy-MM-dd}.xlsx", now);
+            ExportToExcel(fileName, accountingItems);
 
+            Console.ReadLine();
+        }
+
+        static void ExportToExcel(string filePath, List<AccountingItem> accountingItems)
+        {
             DataTable dt = new DataTable();
             dt.Columns.Add("Control", typeof(String));
 
@@ -172,10 +178,56 @@ namespace AccountingRobot
                     );
             }
 
-            // Codes for the Closed XML
+            // Build Excel spreadsheet using Closed XML
             using (XLWorkbook wb = new XLWorkbook())
             {
                 var ws = wb.Worksheets.Add(dt, "Accounting");
+                var table = ws.Tables.First();
+                table.Theme = XLTableTheme.TableStyleMedium15;
+                table.ShowTotalsRow = true;
+
+                // set sum functions for each of the table columns 
+                table.Field("AccountPaypal").TotalsRowFunction = XLTotalsRowFunction.Sum;              // 1910
+                table.Field("AccountStripe").TotalsRowFunction = XLTotalsRowFunction.Sum;              // 1915
+                table.Field("AccountVipps").TotalsRowFunction = XLTotalsRowFunction.Sum;               // 1918
+                table.Field("AccountBank").TotalsRowFunction = XLTotalsRowFunction.Sum;                // 1920
+
+                table.Field("VATPurchase").TotalsRowFunction = XLTotalsRowFunction.Sum;
+                table.Field("VATSales").TotalsRowFunction = XLTotalsRowFunction.Sum;
+
+                table.Field("SalesVAT").TotalsRowFunction = XLTotalsRowFunction.Sum;                   // 3000
+                table.Field("SalesVATExempt").TotalsRowFunction = XLTotalsRowFunction.Sum;             // 3100
+
+                table.Field("CostOfGoods").TotalsRowFunction = XLTotalsRowFunction.Sum;                // 4005
+                table.Field("CostForReselling").TotalsRowFunction = XLTotalsRowFunction.Sum;           // 4300
+                table.Field("CostForSalary").TotalsRowFunction = XLTotalsRowFunction.Sum;              // 5000
+                table.Field("CostForSalaryTax").TotalsRowFunction = XLTotalsRowFunction.Sum;           // 5400
+                table.Field("CostForDepreciation").TotalsRowFunction = XLTotalsRowFunction.Sum;        // 6000
+                table.Field("CostForShipping").TotalsRowFunction = XLTotalsRowFunction.Sum;            // 6100
+                table.Field("CostForElectricity").TotalsRowFunction = XLTotalsRowFunction.Sum;         // 6340 
+                table.Field("CostForToolsInventory").TotalsRowFunction = XLTotalsRowFunction.Sum;      // 6500
+                table.Field("CostForMaintenance").TotalsRowFunction = XLTotalsRowFunction.Sum;         // 6695
+                table.Field("CostForFacilities").TotalsRowFunction = XLTotalsRowFunction.Sum;          // 6800 
+
+                table.Field("CostOfData").TotalsRowFunction = XLTotalsRowFunction.Sum;                 // 6810 
+                table.Field("CostOfPhoneInternet").TotalsRowFunction = XLTotalsRowFunction.Sum;        // 6900
+                table.Field("CostForTravelAndAllowance").TotalsRowFunction = XLTotalsRowFunction.Sum;  // 7140
+                table.Field("CostOfAdvertising").TotalsRowFunction = XLTotalsRowFunction.Sum;          // 7330
+                table.Field("CostOfOther").TotalsRowFunction = XLTotalsRowFunction.Sum;                // 7700
+
+                table.Field("FeesBank").TotalsRowFunction = XLTotalsRowFunction.Sum;                   // 7770
+                table.Field("FeesPaypal").TotalsRowFunction = XLTotalsRowFunction.Sum;                 // 7780
+                table.Field("FeesStripe").TotalsRowFunction = XLTotalsRowFunction.Sum;                 // 7785 
+
+                table.Field("CostForEstablishment").TotalsRowFunction = XLTotalsRowFunction.Sum;       // 7790
+
+                table.Field("IncomeFinance").TotalsRowFunction = XLTotalsRowFunction.Sum;              // 8099
+                table.Field("CostOfFinance").TotalsRowFunction = XLTotalsRowFunction.Sum;              // 8199
+
+                table.Field("Investments").TotalsRowFunction = XLTotalsRowFunction.Sum;                // 1200
+                table.Field("AccountsReceivable").TotalsRowFunction = XLTotalsRowFunction.Sum;         // 1500
+                table.Field("PersonalWithdrawal").TotalsRowFunction = XLTotalsRowFunction.Sum;
+                table.Field("PersonalDeposit").TotalsRowFunction = XLTotalsRowFunction.Sum;
 
                 // set formulas
                 // get all rows in my datatable 
@@ -202,20 +254,20 @@ namespace AccountingRobot
                 }
 
                 // set font color for control column
-                ws.Columns("A").Style.Font.FontColor = XLColor.Red;
-                ws.Columns("A").Style.Font.Bold = true;
+                table.Columns("A").Style.Font.FontColor = XLColor.Red;
+                table.Columns("A").Style.Font.Bold = true;
 
                 // set background color for VAT
                 var lightGreen = XLColor.FromArgb(0xD8E4BC);
-                ws.Columns("T:U").Style.Fill.BackgroundColor = lightGreen;
+                table.Columns("T:U").Style.Fill.BackgroundColor = lightGreen;
 
                 // set background color for investments, withdrawal and deposits
                 var lightBlue = XLColor.FromArgb(0xC5D9F1);
-                ws.Columns("AS:AV").Style.Fill.BackgroundColor = lightBlue;
+                table.Columns("AS:AV").Style.Fill.BackgroundColor = lightBlue;
 
                 // set background color for control sum
                 var lightRed = XLColor.FromArgb(0xE6B8B7);
-                ws.Columns("AX").Style.Fill.BackgroundColor = lightRed;
+                table.Columns("AX").Style.Fill.BackgroundColor = lightRed;
 
                 // set column formats
                 ws.Range("C2:C9999").Style.NumberFormat.Format = "dd.MM.yyyy";
@@ -231,10 +283,8 @@ namespace AccountingRobot
                 decimalRange.Style.NumberFormat.Format = "#,##0.00;[Red]-#,##0.00;";
                 decimalRange.DataType = XLCellValues.Number;
 
-                wb.SaveAs(fileName);
+                wb.SaveAs(filePath);
             }
-
-            Console.ReadLine();
         }
 
         static List<AccountingItem> ProcessBankAccountStatement(string skandiabankenXLSX)
@@ -252,8 +302,18 @@ namespace AccountingRobot
             var aliExpressOrderGroups = AliExpress.CombineOrders(aliExpressOrders);
 
             // run through the bank account transactions
-            //var skandiabankenTransactions = Skandiabanken.ReadTransactions(skandiabankenXLSX);
-            var skandiabankenTransactions = Skandiabanken.ReadTransactions2(skandiabankenXLSX);
+            var skandiabankenBankStatement = Skandiabanken.ReadBankStatement(skandiabankenXLSX);
+            var skandiabankenTransactions = skandiabankenBankStatement.Transactions;
+
+            // add incoming balance
+            var incomingBalance = new AccountingItem();
+            incomingBalance.AccountBank = skandiabankenBankStatement.IncomingBalance;
+            incomingBalance.PersonalDeposit = -skandiabankenBankStatement.IncomingBalance;
+            incomingBalance.Date = skandiabankenBankStatement.IncomingBalanceDate;
+            incomingBalance.Text = skandiabankenBankStatement.IncomingBalanceLabel;
+            incomingBalance.AccountingType = "INNGÅENDE SALDO";
+            incomingBalance.Type = "Saldo";
+            accountingList.Add(incomingBalance);
 
             // and map each one to the right meta information
             foreach (var skandiabankenTransaction in skandiabankenTransactions)
@@ -577,7 +637,7 @@ namespace AccountingRobot
                         //&& (null != transaction.Payer && transaction.Payer.Equals(shopifyOrder.CustomerEmail))
                         && (
                         (null != transaction.PayerDisplayName && transaction.PayerDisplayName.Equals(shopifyOrder.CustomerName, StringComparison.InvariantCultureIgnoreCase))
-                        || 
+                        ||
                         (null != transaction.Payer && transaction.Payer.Equals(shopifyOrder.CustomerEmail, StringComparison.InvariantCultureIgnoreCase))
                         )
                         && (grossAmount == shopifyOrder.TotalPrice)

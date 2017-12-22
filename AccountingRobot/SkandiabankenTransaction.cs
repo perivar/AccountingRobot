@@ -173,10 +173,10 @@ namespace AccountingRobot
 
                 // store properies
                 ExternalPurchaseDate = purchaseDate;
-                ExternalPurchaseAmount = FastExcelUtils.GetDecimalFromExcelCurrencyString(amount);
+                ExternalPurchaseAmount = ExcelUtils.GetDecimalFromExcelCurrencyString(amount);
                 ExternalPurchaseCurrency = currency;
                 ExternalPurchaseVendor = vendor;
-                ExternalPurchaseExchangeRate = FastExcelUtils.GetDecimalFromExcelCurrencyString(exchangeRate);
+                ExternalPurchaseExchangeRate = ExcelUtils.GetDecimalFromExcelCurrencyString(exchangeRate);
 
                 if (vendor.CaseInsensitiveContains("Wazalo")
                     || vendor.CaseInsensitiveContains("Shopifycomc"))

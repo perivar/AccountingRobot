@@ -1,108 +1,17 @@
-﻿using ClosedXML.Excel;
-using FastExcel;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+using ClosedXML.Excel;
 
 namespace AccountingRobot
 {
     public static class Skandiabanken
     {
-        public static List<SkandiabankenTransaction> ReadTransactions(string skandiabankenTransactionsFilePath)
-        {
-            var skandiabankenTransactions = new List<SkandiabankenTransaction>();
-
-            // Get the input file paths
-            FileInfo inputFile = new FileInfo(skandiabankenTransactionsFilePath);
-
-            // Create a worksheet
-            Worksheet worksheet = null;
-
-            // Create an instance of Fast Excel
-            using (var fastExcel = new FastExcel.FastExcel(inputFile, true))
-            {
-                // Read the rows using worksheet name
-                string worksheetName = "Kontoutskrift";
-                worksheet = fastExcel.Read(worksheetName);
-
-                Console.WriteLine("Reading worksheet {0} ...", worksheetName);
-
-                // skip the three first rows since they only contain incoming balance and headers
-                foreach (var row in worksheet.Rows.Skip(3))
-                {
-                    // read value rows
-                    // BOKFØRINGSDATO	
-                    // RENTEDATO	
-                    // ARKIVREFERANSE	
-                    // TYPE	
-                    // TEKST	
-                    // UT FRA KONTO	
-                    // INN PÅ KONTO
-                    var tmpValue = row.GetCellByColumnName("A").Value;
-
-                    // if the first column (BOKFØRINGSDATO) field is empty we have reached the end 
-                    // or not yet the start: The start is dealt with with the worksheet.Rows.Skip(3) command 
-                    if (tmpValue.Equals(""))
-                    {
-                        break;
-                    }
-                    var transactionDateString = tmpValue.ToString();
-                    var interestDateString = row.GetCellByColumnName("B").Value.ToString();
-                    var archiveReferenceString = row.GetCellByColumnName("C").Value.ToString();
-                    var type = row.GetCellByColumnName("D").Value.ToString();
-                    var text = row.GetCellByColumnName("E").Value.ToString();
-                    var outAccountString = row.GetCellByColumnName("F").Value.ToString();
-                    var inAccountString = row.GetCellByColumnName("G").Value.ToString();
-
-                    // convert to correct types
-                    var transactionDate = FastExcelUtils.GetDateFromExcelDateInt(transactionDateString);
-                    var interestDate = FastExcelUtils.GetDateFromExcelDateInt(interestDateString);
-                    var archiveReference = long.Parse(archiveReferenceString);
-                    decimal outAccount = FastExcelUtils.GetDecimalFromExcelCurrencyString(outAccountString);
-                    decimal inAccount = FastExcelUtils.GetDecimalFromExcelCurrencyString(inAccountString);
-
-                    // set account change
-                    decimal accountChange = inAccount - outAccount;
-
-                    var skandiabankenTransaction = new SkandiabankenTransaction();
-                    skandiabankenTransaction.TransactionDate = transactionDate;
-                    skandiabankenTransaction.InterestDate = interestDate;
-                    skandiabankenTransaction.ArchiveReference = archiveReference;
-                    skandiabankenTransaction.Type = type;
-                    skandiabankenTransaction.Text = text;
-                    skandiabankenTransaction.OutAccount = outAccount;
-                    skandiabankenTransaction.InAccount = inAccount;
-                    skandiabankenTransaction.AccountChange = accountChange;
-
-                    if (accountChange > 0)
-                    {
-                        skandiabankenTransaction.AccountingType = SkandiabankenTransaction.AccountingTypeEnum.IncomeUnknown;
-                    }
-                    else
-                    {
-                        skandiabankenTransaction.AccountingType = SkandiabankenTransaction.AccountingTypeEnum.CostUnknown;
-                    }
-
-                    skandiabankenTransactions.Add(skandiabankenTransaction);
-                }
-            }
-
-            return skandiabankenTransactions;
-        }
-
-        public static List<SkandiabankenTransaction> ReadTransactions2(string skandiabankenTransactionsFilePath)
+        public static SkandiabankenBankStatement ReadBankStatement(string skandiabankenTransactionsFilePath)
         {
             var skandiabankenTransactions = new List<SkandiabankenTransaction>();
 
             var wb = new XLWorkbook(skandiabankenTransactionsFilePath);
             var ws = wb.Worksheet("Kontoutskrift");
-
-            /*
-            int rowNumber = 1;
-            while (ws.Cell(++rowNumber, 1).IsEmpty()) { }
-            var val = ws.Cell(rowNumber, 1).Value;
-            */
 
             var startColumn = ws.Column(1);
             var firstCellFirstColumn = startColumn.FirstCellUsed();
@@ -118,6 +27,13 @@ namespace AccountingRobot
             // Get the transactions
             foreach (var row in transactionTable.DataRange.Rows())
             {
+                // BOKFØRINGSDATO	
+                // RENTEDATO	
+                // ARKIVREFERANSE	
+                // TYPE	
+                // TEKST	
+                // UT FRA KONTO	
+                // INN PÅ KONTO
                 var skandiabankenTransaction = new SkandiabankenTransaction();
                 skandiabankenTransaction.TransactionDate = row.Field(0).GetDateTime();
                 skandiabankenTransaction.InterestDate = row.Field(1).GetDateTime();
@@ -129,7 +45,6 @@ namespace AccountingRobot
 
                 // set account change
                 decimal accountChange = skandiabankenTransaction.InAccount - skandiabankenTransaction.OutAccount; ;
-
                 skandiabankenTransaction.AccountChange = accountChange;
 
                 if (accountChange > 0)
@@ -147,27 +62,38 @@ namespace AccountingRobot
             // find the incoming and outgoing balance
             var incomingBalanceCell = ws.Cell(lastCellLastColumn.Address.RowNumber + 2, lastCellLastColumn.Address.ColumnNumber);
             var outgoingBalanceCell = ws.Cell(1, lastCellLastColumn.Address.ColumnNumber);
-
             decimal incomingBalance = incomingBalanceCell.GetValue<decimal>();
             decimal outgoingBalance = outgoingBalanceCell.GetValue<decimal>();
+            var incomingBalanceLabelCell = ws.Cell(lastCellLastColumn.Address.RowNumber + 2, lastCellLastColumn.Address.ColumnNumber-2);
+            var outgoingBalanceLabelCell = ws.Cell(1, lastCellLastColumn.Address.ColumnNumber-2);
+            var incomingBalanceLabel = incomingBalanceLabelCell.GetString();
+            var outgoingBalanceLabel = outgoingBalanceLabelCell.GetString();
+            var incomingBalanceDate = ExcelUtils.GetDateFromBankStatementString(incomingBalanceLabel);
+            var outgoingBalanceDate = ExcelUtils.GetDateFromBankStatementString(outgoingBalanceLabel);
 
-            /*
-            // define table header
-            var tableHeader = ws.Range(firstCellFirstColumn, ws.Cell(firstCellFirstColumn.Address.RowNumber, firstCellLastColumnNumber));
-
-            // Move to the next row (it now has the titles)
-            var transactionRow = tableHeader.FirstRowUsed();
-            transactionRow = transactionRow.RowBelow();
-
-            // Get all transactions
-            while (!transactionRow.Cell(1).IsEmpty())
+            var bankStatment = new SkandiabankenBankStatement
             {
-                var transactionDate = transactionRow.Cell(1).GetDateTime();
-                transactionRow = transactionRow.RowBelow();
-            }
-            */
+                Transactions = skandiabankenTransactions,
+                IncomingBalanceDate = incomingBalanceDate,
+                IncomingBalanceLabel = incomingBalanceLabel,
+                IncomingBalance = incomingBalance,
+                OutgoingBalanceDate = outgoingBalanceDate,
+                OutgoingBalanceLabel = outgoingBalanceLabel,
+                OutgoingBalance = outgoingBalance
+            };
 
-            return skandiabankenTransactions;
+            return bankStatment;
         }
+    }
+
+    public class SkandiabankenBankStatement
+    {
+        public List<SkandiabankenTransaction> Transactions { get; set; }
+        public DateTime IncomingBalanceDate { get; set; }
+        public string IncomingBalanceLabel { get; set; }
+        public decimal IncomingBalance { get; set; }
+        public DateTime OutgoingBalanceDate { get; set; }
+        public string OutgoingBalanceLabel { get; set; }
+        public decimal OutgoingBalance { get; set; }
     }
 }

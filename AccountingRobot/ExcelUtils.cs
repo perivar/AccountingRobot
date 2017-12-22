@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 
 namespace AccountingRobot
 {
-    public static class FastExcelUtils
+    public static class ExcelUtils
     {
         /// <summary>
         /// Convert from excel date int string to actual date
@@ -38,6 +35,27 @@ namespace AccountingRobot
         {
             //return Convert.ToDecimal(currencyString, CultureInfo.GetCultureInfo("no"));
             return Convert.ToDecimal(currencyString, CultureInfo.InvariantCulture);
+        }
+
+        public static DateTime GetDateFromBankStatementString(string bankeStatementString)
+        {
+            // parse "UTGÅENDE SALDO 20.12.2017"
+
+            Regex regex = new Regex(@".*(\d{2}\.\d{2}\.\d{4})");
+            Match match = regex.Match(bankeStatementString);
+            if (match.Success)
+            {
+                var dateString = match.Groups[1].Value;
+                try
+                {
+                    return DateTime.ParseExact(dateString, "dd.MM.yyyy"   , CultureInfo.InvariantCulture);
+                }
+                catch (Exception)
+                {
+                    return DateTime.MinValue;
+                }
+            }
+            return DateTime.MinValue;
         }
     }
 }

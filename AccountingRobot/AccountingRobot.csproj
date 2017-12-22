@@ -46,9 +46,6 @@
     <Reference Include="DocumentFormat.OpenXml, Version=2.7.2.0, Culture=neutral, PublicKeyToken=8fb06cb64d019a17, processorArchitecture=MSIL">
       <HintPath>..\packages\DocumentFormat.OpenXml.2.7.2\lib\net46\DocumentFormat.OpenXml.dll</HintPath>
     </Reference>
-    <Reference Include="FastExcel, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\FastExcel.2.2.0\lib\netstandard1.3\FastExcel.dll</HintPath>
-    </Reference>
     <Reference Include="FastMember.Signed, Version=1.0.0.9, Culture=neutral, PublicKeyToken=9e8f22703bef9a29, processorArchitecture=MSIL">
       <HintPath>..\packages\FastMember.Signed.1.1.0\lib\net40\FastMember.Signed.dll</HintPath>
     </Reference>
@@ -148,7 +145,7 @@
     <Compile Include="AccountingItem.cs" />
     <Compile Include="AliExpress.cs" />
     <Compile Include="AliExpressOrder.cs" />
-    <Compile Include="FastExcelUtils.cs" />
+    <Compile Include="ExcelUtils.cs" />
     <Compile Include="Oberlo.cs" />
     <Compile Include="Paypal.cs" />
     <Compile Include="PayPalTransaction.cs" />
