@@ -14,7 +14,11 @@ namespace AccountingRobot
         static void Main(string[] args)
         {
             // process the transactions and create accounting overview
-            var accountingShopifyItems = ProcessShopifyStatement();
+            var customerNames = new List<string>();
+            var accountingShopifyItems = ProcessShopifyStatement(customerNames);
+
+            // select only distinct 
+            customerNames = customerNames.Distinct().ToList();
 
             // find latest skandiabanken transaction spreadsheet
             var accountingBankItems = default(List<AccountingItem>);
@@ -26,7 +30,7 @@ namespace AccountingRobot
             // if the cache file object has values
             if (!lastCacheFile.Equals(default(KeyValuePair<DateTime, string>)))
             {
-                accountingBankItems = ProcessBankAccountStatement(lastCacheFile.Value);
+                accountingBankItems = ProcessBankAccountStatement(lastCacheFile.Value, customerNames);
             }
             else
             {
@@ -243,11 +247,22 @@ namespace AccountingRobot
                     string controlFormula = string.Format("=IF(AX{0}=0,\" \",\"!!FEIL!!\")", currentRow);
                     string sumPreRoundingFormula = string.Format("=SUM(P{0}:AV{0})", currentRow);
                     string sumRoundedFormula = string.Format("=ROUND(AW{0},2)", currentRow);
+                    string vatSales = string.Format("=-(N{0}/1.25)*0.25", currentRow);
+                    string salesVATExempt = string.Format("=-(N{0}/1.25)", currentRow);
 
                     // apply formulas to cells.
                     ws.Cells(string.Format("A{0}", currentRow)).FormulaA1 = controlFormula;
                     ws.Cells(string.Format("AW{0}", currentRow)).FormulaA1 = sumPreRoundingFormula;
                     ws.Cells(string.Format("AX{0}", currentRow)).FormulaA1 = sumRoundedFormula;
+
+                    // add VAT formulas
+                    if (ws.Cell(currentRow, 15).Value.Equals("NOK")
+                        && (ws.Cell(currentRow, 7).Value.Equals("SHOPIFY"))
+                        && (ws.Cell(currentRow, 22).GetValue<decimal>() != 0))
+                    {
+                        ws.Cells(string.Format("U{0}", currentRow)).FormulaA1 = vatSales;
+                        ws.Cells(string.Format("V{0}", currentRow)).FormulaA1 = salesVATExempt;
+                    }
 
                     // increment your counters to apply the same data to the following row
                     currentRow++;
@@ -283,11 +298,15 @@ namespace AccountingRobot
                 decimalRange.Style.NumberFormat.Format = "#,##0.00;[Red]-#,##0.00;";
                 decimalRange.DataType = XLCellValues.Number;
 
+                // resize
+                ws.Columns().AdjustToContents();  // Adjust column width
+                ws.Rows().AdjustToContents();     // Adjust row heights
+
                 wb.SaveAs(filePath);
             }
         }
 
-        static List<AccountingItem> ProcessBankAccountStatement(string skandiabankenXLSX)
+        static List<AccountingItem> ProcessBankAccountStatement(string skandiabankenXLSX, List<string> customerNames)
         {
             var accountingList = new List<AccountingItem>();
 
@@ -321,7 +340,7 @@ namespace AccountingRobot
                 // define accounting item
                 var accountingItem = new AccountingItem();
 
-                // set date to closer to midnight
+                // set date to closer to midnight (sorts better)
                 //accountingItem.Date = skandiabankenTransaction.TransactionDate;
                 accountingItem.Date = new DateTime(
                     skandiabankenTransaction.TransactionDate.Year,
@@ -489,6 +508,16 @@ namespace AccountingRobot
                     accountingItem.AccountBank = skandiabankenTransaction.AccountChange;
                 }
 
+                else if (customerNames.Contains(skandiabankenTransaction.Text))
+                {
+                    Console.WriteLine("{0}", skandiabankenTransaction);
+                    accountingItem.Text = string.Format("{0}", skandiabankenTransaction.Text);
+                    accountingItem.Gateway = "vipps";
+                    accountingItem.AccountingType = "OVERFØRSEL VIPPS";
+                    accountingItem.AccountBank = skandiabankenTransaction.AccountChange;
+                    accountingItem.AccountVipps = -skandiabankenTransaction.AccountChange;
+                }
+
                 // 4. None of those above
                 else
                 {
@@ -526,7 +555,7 @@ namespace AccountingRobot
             return accountingList;
         }
 
-        static List<AccountingItem> ProcessShopifyStatement()
+        static List<AccountingItem> ProcessShopifyStatement(List<string> customerNames)
         {
             var accountingList = new List<AccountingItem>();
 
@@ -563,6 +592,10 @@ namespace AccountingRobot
                 accountingItem.AccountingType = "SHOPIFY";
                 accountingItem.Text = string.Format("SALG {0} {1}", shopifyOrder.CustomerName, shopifyOrder.PaymentId);
                 accountingItem.CustomerName = shopifyOrder.CustomerName;
+
+                // add to customer name list
+                customerNames.Add(accountingItem.CustomerName);
+
                 if (shopifyOrder.Gateway != null)
                 {
                     accountingItem.Gateway = shopifyOrder.Gateway.ToLower();
