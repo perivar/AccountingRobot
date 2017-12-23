@@ -65,6 +65,43 @@ namespace AccountingRobot
         public decimal AccountsReceivable { get; set; }         // 1500
         public decimal PersonalWithdrawal { get; set; }
         public decimal PersonalDeposit { get; set; }
+
+        public bool Equals(AccountingItem other)
+        {
+            if (other == null) return false;
+
+            return 
+                ArchiveReference == other.ArchiveReference &&
+                Date == other.Date &&
+                string.Equals(Text, other.Text);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != GetType()) return false;
+            return Equals(obj as AccountingItem);
+        }
+
+        public override int GetHashCode()
+        {
+            // http://www.aaronstannard.com/overriding-equality-in-dotnet/
+            // https://stackoverflow.com/questions/263400/what-is-the-best-algorithm-for-an-overridden-system-object-gethashcode/263416#263416
+            unchecked
+            {
+                var hashCode = 13;
+                hashCode = (hashCode * 397) ^ (int)ArchiveReference;
+                hashCode = (hashCode * 397) ^ (!string.IsNullOrEmpty(Text) ? Text.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ Date.GetHashCode();
+                return hashCode;
+            }
+        }
+
+        public override string ToString()
+        {
+            return string.Format("{0} {1:dd.MM.yyyy} {2} {3:C} {4:C} {5:C} {6:C}", Number, Date, Text, AccountPaypal, AccountStripe, AccountVipps, AccountBank);
+        }
     }
 
     public sealed class AccountingItemCsvMap : ClassMap<AccountingItem>

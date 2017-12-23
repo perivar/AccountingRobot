@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ClosedXML.Excel;
+using System;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
@@ -48,7 +49,7 @@ namespace AccountingRobot
                 var dateString = match.Groups[1].Value;
                 try
                 {
-                    return DateTime.ParseExact(dateString, "dd.MM.yyyy"   , CultureInfo.InvariantCulture);
+                    return DateTime.ParseExact(dateString, "dd.MM.yyyy", CultureInfo.InvariantCulture);
                 }
                 catch (Exception)
                 {
@@ -56,6 +57,26 @@ namespace AccountingRobot
                 }
             }
             return DateTime.MinValue;
+        }
+
+        public static T GetExcelField<T>(IXLTableRow row, string fieldName)
+        {
+            object value;
+            var item = row.Field(fieldName);
+            if (item.HasFormula)
+            {
+                value = item.ValueCached;
+            }
+            else
+            {
+                value = item.Value;
+            }
+
+            if (null != value && !"".Equals(value))
+            {
+                return (T)Convert.ChangeType(value, typeof(T), CultureInfo.InvariantCulture);
+            }
+            return default(T);
         }
     }
 }
