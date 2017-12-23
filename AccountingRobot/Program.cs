@@ -334,6 +334,8 @@ namespace AccountingRobot
             incomingBalance.Type = "Saldo";
             accountingList.Add(incomingBalance);
 
+            var usedOrderNumbers = new HashSet<string>();
+
             // and map each one to the right meta information
             foreach (var skandiabankenTransaction in skandiabankenTransactions)
             {
@@ -395,95 +397,7 @@ namespace AccountingRobot
                     accountingItem.AccountBank = skandiabankenTransaction.AccountChange;
                     accountingItem.CostForReselling = -skandiabankenTransaction.AccountChange;
 
-                    // lookup in AliExpress purchase list
-                    // matching ordertime and orderamount
-                    var aliExpressQuery =
-                        from order in aliExpressOrderGroups
-                        where
-                        order.OrderTime.Date == skandiabankenTransaction.ExternalPurchaseDate.Date &&
-                        order.OrderAmount == skandiabankenTransaction.ExternalPurchaseAmount
-                        orderby order.OrderTime ascending
-                        select order;
-
-                    // if the count is more than one, we cannot match easily 
-                    if (aliExpressQuery.Count() > 1)
-                    {
-                        string aliexOrders = String.Join("\n\t", aliExpressQuery.Select(o => o.ToString()));
-                        Console.WriteLine("\tERROR: MUST CHOOSE ONE OF MULTIPLE:\n\t{0}", aliexOrders);
-
-                        // flatten the aliexpress order list
-                        var aliExpressOrderList = aliExpressQuery.SelectMany(a => a.Children).ToList();
-
-                        // join the aliexpress list and the oberlo list on aliexpress order number
-                        var joined = from a in aliExpressOrderList
-                                     join b in oberloOrders
-                                    on a.OrderId.ToString() equals b.AliOrderNumber
-                                     select new { AliExpress = a, Oberlo = b };
-
-                        if (joined.Count() > 0)
-                        {
-                            // found shopify order numbers
-                            Console.WriteLine("\tFOUND SHOPIFY ORDERS:");
-
-                            // join the ordernumbers into a string
-                            var orderNumbers = string.Join(", ", joined.Select(c => c.Oberlo).Select(d => d.OrderNumber).Distinct());
-                            if (orderNumbers.Equals(""))
-                            {
-                                accountingItem.ErrorMessage = "Shopify: No orders found";
-                                orderNumbers = "NOT FOUND";
-                            }
-                            else
-                            {
-                                accountingItem.ErrorMessage = "Shopify: More than one found. Choose one";
-                            }
-                            Console.WriteLine("\t{0}", orderNumbers);
-                            accountingItem.NumPurchase = orderNumbers;
-                        }
-                        else
-                        {
-                            // could not find shopify order numbers
-                            Console.WriteLine("\tERROR: NO SHOPIFY ORDERS FOUND!");
-                            accountingItem.ErrorMessage = "Shopify: No orders found";
-                            accountingItem.NumPurchase = "NOT FOUND";
-                        }
-                    }
-                    // one to one match
-                    else if (aliExpressQuery.Count() == 1)
-                    {
-                        Console.WriteLine("\tOK: FOUND SINGLE: {0}", aliExpressQuery.First());
-
-                        // join order ids and make sure they are strings
-                        var ids = aliExpressQuery.SelectMany(a => a.Children).Select(b => b.OrderId.ToString()).ToList();
-
-                        // lookup in oberlo to find shopify order number
-                        var oberloQuery =
-                            from order in oberloOrders
-                            where
-                            ids.Contains(order.AliOrderNumber)
-                            orderby order.CreatedDate ascending
-                            select order;
-
-                        // join the ordernumbers into a string
-                        var orderNumbers = string.Join(", ", oberloQuery.Select(c => c.OrderNumber).Distinct());
-                        if (orderNumbers.Equals(""))
-                        {
-                            accountingItem.ErrorMessage = "Shopify: No orders found";
-                            orderNumbers = "NOT FOUND";
-                        }
-                        else
-                        {
-                            // lookup customer name
-                            accountingItem.CustomerName = oberloQuery.First().CustomerName;
-                        }
-                        Console.WriteLine("\t{0}", orderNumbers);
-                        accountingItem.NumPurchase = orderNumbers;
-                    }
-                    else
-                    {
-                        Console.WriteLine("\tERROR: NO SHOPIFY ORDER FOUND!");
-                        accountingItem.ErrorMessage = "Shopify: No orders found";
-                        accountingItem.NumPurchase = "NOT FOUND";
-                    }
+                    FindAliExpressOrderNumber(usedOrderNumbers, aliExpressOrderGroups, oberloOrders, skandiabankenTransaction, accountingItem);
                 }
 
                 // 2. Transfer Paypal
@@ -650,7 +564,7 @@ namespace AccountingRobot
                         }
                         else
                         {
-                            Console.Out.WriteLine("ERROR: NO STRIPE TRANSACTIONS FOUND!");
+                            Console.Out.WriteLine("ERROR: NO STRIPE TRANSACTIONS FOR {0:C} FOUND FOR {1} {2} BETWEEN {3:dd.MM.yyyy} and {4:dd.MM.yyyy}!", shopifyOrder.TotalPrice, shopifyOrder.Name, shopifyOrder.CustomerName, startDate, endDate);
                             accountingItem.ErrorMessage = "Stripe: No transactions found";
                         }
 
@@ -698,7 +612,7 @@ namespace AccountingRobot
                         }
                         else
                         {
-                            Console.Out.WriteLine("ERROR: NO PAYPAL TRANSACTIONS FOUND!");
+                            Console.Out.WriteLine("ERROR: NO PAYPAL TRANSACTIONS FOR {0:C} FOUND FOR {1} {2} BETWEEN {3:dd.MM.yyyy} and {4:dd.MM.yyyy}!", shopifyOrder.TotalPrice, shopifyOrder.Name, shopifyOrder.CustomerName, startDate, endDate);
                             accountingItem.ErrorMessage = "Paypal: No transactions found";
                         }
 
@@ -728,5 +642,98 @@ namespace AccountingRobot
 
             return accountingList;
         }
+
+        static void FindAliExpressOrderNumber(HashSet<string> usedOrderNumbers, List<AliExpressOrderGroup> aliExpressOrderGroups, List<OberloOrder> oberloOrders, SkandiabankenTransaction skandiabankenTransaction, AccountingItem accountingItem)
+        {
+            // set start and stop date
+            var startDate = skandiabankenTransaction.ExternalPurchaseDate.AddDays(-4);
+            var endDate = skandiabankenTransaction.ExternalPurchaseDate;
+
+            // lookup in AliExpress purchase list
+            // matching ordertime and orderamount
+            var aliExpressQuery =
+                from order in aliExpressOrderGroups
+                where
+                (order.OrderTime.Date >= startDate.Date && order.OrderTime.Date <= endDate.Date) &&
+                order.OrderAmount == skandiabankenTransaction.ExternalPurchaseAmount
+                orderby order.OrderTime ascending
+                select order;
+
+            // if the count is more than one, we cannot match easily 
+            if (aliExpressQuery.Count() > 1)
+            {
+                // first check if one of the found orders was ordered on the given purchase date
+                var aliExpressQueryExactDate =
+                from order in aliExpressQuery
+                where
+                order.OrderTime.Date == skandiabankenTransaction.ExternalPurchaseDate.Date
+                orderby order.OrderTime ascending
+                select order;
+
+                // if the count is only one, we have a single match
+                if (aliExpressQueryExactDate.Count() == 1)
+                {
+                    ProcessAliExpressMatch(usedOrderNumbers, aliExpressQueryExactDate, oberloOrders, accountingItem);
+                    return;
+                }
+                // use the original query and present the results
+                else
+                {
+                    ProcessAliExpressMatch(usedOrderNumbers, aliExpressQuery, oberloOrders, accountingItem);
+                }
+            }
+            // if the count is only one, we have a single match
+            else if (aliExpressQuery.Count() == 1)
+            {
+                ProcessAliExpressMatch(usedOrderNumbers, aliExpressQuery, oberloOrders, accountingItem);
+            }
+            // no orders found
+            else
+            {
+                // could not find shopify order numbers
+                Console.WriteLine("\tERROR: NO SHOPIFY ORDERS FOUND!");
+                accountingItem.ErrorMessage = "Shopify: No orders found";
+                accountingItem.NumPurchase = "NOT FOUND";
+            }
+        }
+
+        static void ProcessAliExpressMatch(HashSet<string> usedOrderNumbers, IOrderedEnumerable<AliExpressOrderGroup> aliExpressQuery, List<OberloOrder> oberloOrders, AccountingItem accountingItem)
+        {
+            // flatten the aliexpress order list
+            var aliExpressOrderList = aliExpressQuery.SelectMany(a => a.Children).ToList();
+
+            // join the aliexpress list and the oberlo list on aliexpress order number
+            var joined = from a in aliExpressOrderList
+                         join b in oberloOrders
+                        on a.OrderId.ToString() equals b.AliOrderNumber
+                         select new { AliExpress = a, Oberlo = b };
+
+            if (joined.Count() > 0)
+            {
+                Console.WriteLine("\tSHOPIFY ORDERS FOUND ...");
+
+                string orderNumber = "NONE FOUND";
+                foreach (var item in joined.Reverse())
+                {
+                    orderNumber = item.Oberlo.OrderNumber;
+                    if (!usedOrderNumbers.Contains(orderNumber))
+                    {
+                        usedOrderNumbers.Add(orderNumber);
+                        accountingItem.NumPurchase = orderNumber;
+                        accountingItem.CustomerName = item.Oberlo.CustomerName;
+                        Console.WriteLine("\tSELECTED: {0} {1}", accountingItem.NumPurchase, accountingItem.CustomerName);
+                        break;
+                    }
+                }
+            }
+
+            // could not find shopify order numbers
+            else
+            {
+                Console.WriteLine("\tERROR: NO OBERLO ORDERS FOUND!");
+                accountingItem.ErrorMessage = "Oberlo: No orders found";
+                accountingItem.NumPurchase = "NOT FOUND";
+            }
+        }    
     }
 }
