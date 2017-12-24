@@ -224,13 +224,12 @@ namespace AccountingRobot
             IXLTables tables = ws.Tables;
             IXLTable table = tables.FirstOrDefault();
 
-            var oldAccountingSpreadsheet = new List<AccountingItem>();
+            var existingAccountingItems = new Dictionary<IXLTableRow, AccountingItem>();
             if (table != null)
             {
                 foreach (var row in table.DataRange.Rows())
                 {
                     var accountingItem = new AccountingItem();
-
                     accountingItem.Date = ExcelUtils.GetExcelField<DateTime>(row, "Dato");
                     accountingItem.Number = ExcelUtils.GetExcelField<int>(row, "Bilagsnr.");
                     accountingItem.ArchiveReference = ExcelUtils.GetExcelField<long>(row, "Arkivreferanse");
@@ -287,77 +286,91 @@ namespace AccountingRobot
                     accountingItem.PersonalWithdrawal = ExcelUtils.GetExcelField<decimal>(row, "Privat uttak");
                     accountingItem.PersonalDeposit = ExcelUtils.GetExcelField<decimal>(row, "Privat innskudd");
 
-                    oldAccountingSpreadsheet.Add(accountingItem);
+                    existingAccountingItems.Add(row, accountingItem);
                 }
 
+                // reduce the old Accounting Spreadsheet and remove the entries that doesn't have a number
+                var existingAccountingItemsToDelete =
+                    (from row in existingAccountingItems
+                     where
+                     row.Value.Number == 0
+                     orderby row.Value.Number ascending
+                     select row);
+
+                // identify elements from the new accounting items list that does not exist in the existing spreadsheet
+                var existingAccountingItemsToKeep = existingAccountingItems.Except(existingAccountingItemsToDelete);
+                var newAccountingElements = newAccountingItems.Except(existingAccountingItemsToKeep.Select(o => o.Value)).ToList();
+
+                // delete rows from table
+                foreach (var deleteRow in existingAccountingItemsToDelete) {
+                    deleteRow.Key.Delete(XLShiftDeletedCells.ShiftCellsUp);
+                }
+
+                // insert new rows below the existing table
                 // turn off totals row before adding more rows
                 table.ShowTotalsRow = false;
-
-                // add more rows
-                var firstNotSecond = newAccountingItems.Except(oldAccountingSpreadsheet).ToList();
-                var secondNotFirst = oldAccountingSpreadsheet.Except(newAccountingItems).ToList();
-                var newRows = table.InsertRowsBelow(firstNotSecond.Count(), true);
+                var newRows = table.InsertRowsBelow(newAccountingElements.Count(), true);
 
                 var counter = 0;
                 foreach (var newRow in newRows)
                 {
                     newRow.Cell(1).Value = "";
-                    newRow.Cell(2).Value = firstNotSecond[counter].Periode;
-                    newRow.Cell(3).Value = firstNotSecond[counter].Date;
-                    newRow.Cell(4).Value = firstNotSecond[counter].Number;
-                    newRow.Cell(5).Value = firstNotSecond[counter].ArchiveReference;
-                    newRow.Cell(6).Value = firstNotSecond[counter].Type;
-                    newRow.Cell(7).Value = firstNotSecond[counter].AccountingType;
-                    newRow.Cell(8).Value = firstNotSecond[counter].Text;
-                    newRow.Cell(9).Value = firstNotSecond[counter].CustomerName;
-                    newRow.Cell(10).Value = firstNotSecond[counter].ErrorMessage;
-                    newRow.Cell(11).Value = firstNotSecond[counter].Gateway;
-                    newRow.Cell(12).Value = firstNotSecond[counter].NumSale;
-                    newRow.Cell(13).Value = firstNotSecond[counter].NumPurchase;
-                    newRow.Cell(14).Value = firstNotSecond[counter].PurchaseOtherCurrency;
-                    newRow.Cell(15).Value = firstNotSecond[counter].OtherCurrency;
+                    newRow.Cell(2).Value = newAccountingElements[counter].Periode;
+                    newRow.Cell(3).Value = newAccountingElements[counter].Date;
+                    newRow.Cell(4).Value = newAccountingElements[counter].Number;
+                    newRow.Cell(5).Value = newAccountingElements[counter].ArchiveReference;
+                    newRow.Cell(6).Value = newAccountingElements[counter].Type;
+                    newRow.Cell(7).Value = newAccountingElements[counter].AccountingType;
+                    newRow.Cell(8).Value = newAccountingElements[counter].Text;
+                    newRow.Cell(9).Value = newAccountingElements[counter].CustomerName;
+                    newRow.Cell(10).Value = newAccountingElements[counter].ErrorMessage;
+                    newRow.Cell(11).Value = newAccountingElements[counter].Gateway;
+                    newRow.Cell(12).Value = newAccountingElements[counter].NumSale;
+                    newRow.Cell(13).Value = newAccountingElements[counter].NumPurchase;
+                    newRow.Cell(14).Value = newAccountingElements[counter].PurchaseOtherCurrency;
+                    newRow.Cell(15).Value = newAccountingElements[counter].OtherCurrency;
 
-                    newRow.Cell(16).Value = firstNotSecond[counter].AccountPaypal;               // 1910
-                    newRow.Cell(17).Value = firstNotSecond[counter].AccountStripe;               // 1915
-                    newRow.Cell(18).Value = firstNotSecond[counter].AccountVipps;                // 1918
-                    newRow.Cell(19).Value = firstNotSecond[counter].AccountBank;                 // 1920
+                    newRow.Cell(16).Value = newAccountingElements[counter].AccountPaypal;               // 1910
+                    newRow.Cell(17).Value = newAccountingElements[counter].AccountStripe;               // 1915
+                    newRow.Cell(18).Value = newAccountingElements[counter].AccountVipps;                // 1918
+                    newRow.Cell(19).Value = newAccountingElements[counter].AccountBank;                 // 1920
 
-                    newRow.Cell(20).Value = firstNotSecond[counter].VATPurchase;
-                    newRow.Cell(21).Value = firstNotSecond[counter].VATSales;
+                    newRow.Cell(20).Value = newAccountingElements[counter].VATPurchase;
+                    newRow.Cell(21).Value = newAccountingElements[counter].VATSales;
 
-                    newRow.Cell(22).Value = firstNotSecond[counter].SalesVAT;                    // 3000
-                    newRow.Cell(23).Value = firstNotSecond[counter].SalesVATExempt;              // 3100
+                    newRow.Cell(22).Value = newAccountingElements[counter].SalesVAT;                    // 3000
+                    newRow.Cell(23).Value = newAccountingElements[counter].SalesVATExempt;              // 3100
 
-                    newRow.Cell(24).Value = firstNotSecond[counter].CostOfGoods;                 // 4005
-                    newRow.Cell(25).Value = firstNotSecond[counter].CostForReselling;            // 4300
-                    newRow.Cell(26).Value = firstNotSecond[counter].CostForSalary;               // 5000
-                    newRow.Cell(27).Value = firstNotSecond[counter].CostForSalaryTax;            // 5400
-                    newRow.Cell(28).Value = firstNotSecond[counter].CostForDepreciation;         // 6000
-                    newRow.Cell(29).Value = firstNotSecond[counter].CostForShipping;             // 6100
-                    newRow.Cell(30).Value = firstNotSecond[counter].CostForElectricity;          // 6340 
-                    newRow.Cell(31).Value = firstNotSecond[counter].CostForToolsInventory;       // 6500
-                    newRow.Cell(32).Value = firstNotSecond[counter].CostForMaintenance;          // 6695
-                    newRow.Cell(33).Value = firstNotSecond[counter].CostForFacilities;           // 6800 
+                    newRow.Cell(24).Value = newAccountingElements[counter].CostOfGoods;                 // 4005
+                    newRow.Cell(25).Value = newAccountingElements[counter].CostForReselling;            // 4300
+                    newRow.Cell(26).Value = newAccountingElements[counter].CostForSalary;               // 5000
+                    newRow.Cell(27).Value = newAccountingElements[counter].CostForSalaryTax;            // 5400
+                    newRow.Cell(28).Value = newAccountingElements[counter].CostForDepreciation;         // 6000
+                    newRow.Cell(29).Value = newAccountingElements[counter].CostForShipping;             // 6100
+                    newRow.Cell(30).Value = newAccountingElements[counter].CostForElectricity;          // 6340 
+                    newRow.Cell(31).Value = newAccountingElements[counter].CostForToolsInventory;       // 6500
+                    newRow.Cell(32).Value = newAccountingElements[counter].CostForMaintenance;          // 6695
+                    newRow.Cell(33).Value = newAccountingElements[counter].CostForFacilities;           // 6800 
 
-                    newRow.Cell(34).Value = firstNotSecond[counter].CostOfData;                  // 6810 
-                    newRow.Cell(35).Value = firstNotSecond[counter].CostOfPhoneInternet;         // 6900
-                    newRow.Cell(36).Value = firstNotSecond[counter].CostForTravelAndAllowance;   // 7140
-                    newRow.Cell(37).Value = firstNotSecond[counter].CostOfAdvertising;           // 7330
-                    newRow.Cell(38).Value = firstNotSecond[counter].CostOfOther;                 // 7700
+                    newRow.Cell(34).Value = newAccountingElements[counter].CostOfData;                  // 6810 
+                    newRow.Cell(35).Value = newAccountingElements[counter].CostOfPhoneInternet;         // 6900
+                    newRow.Cell(36).Value = newAccountingElements[counter].CostForTravelAndAllowance;   // 7140
+                    newRow.Cell(37).Value = newAccountingElements[counter].CostOfAdvertising;           // 7330
+                    newRow.Cell(38).Value = newAccountingElements[counter].CostOfOther;                 // 7700
 
-                    newRow.Cell(39).Value = firstNotSecond[counter].FeesBank;                    // 7770
-                    newRow.Cell(40).Value = firstNotSecond[counter].FeesPaypal;                  // 7780
-                    newRow.Cell(41).Value = firstNotSecond[counter].FeesStripe;                  // 7785 
+                    newRow.Cell(39).Value = newAccountingElements[counter].FeesBank;                    // 7770
+                    newRow.Cell(40).Value = newAccountingElements[counter].FeesPaypal;                  // 7780
+                    newRow.Cell(41).Value = newAccountingElements[counter].FeesStripe;                  // 7785 
 
-                    newRow.Cell(42).Value = firstNotSecond[counter].CostForEstablishment;        // 7790
+                    newRow.Cell(42).Value = newAccountingElements[counter].CostForEstablishment;        // 7790
 
-                    newRow.Cell(43).Value = firstNotSecond[counter].IncomeFinance;               // 8099
-                    newRow.Cell(44).Value = firstNotSecond[counter].CostOfFinance;               // 8199
+                    newRow.Cell(43).Value = newAccountingElements[counter].IncomeFinance;               // 8099
+                    newRow.Cell(44).Value = newAccountingElements[counter].CostOfFinance;               // 8199
 
-                    newRow.Cell(45).Value = firstNotSecond[counter].Investments;                 // 1200
-                    newRow.Cell(46).Value = firstNotSecond[counter].AccountsReceivable;          // 1500
-                    newRow.Cell(47).Value = firstNotSecond[counter].PersonalWithdrawal;
-                    newRow.Cell(48).Value = firstNotSecond[counter].PersonalDeposit;
+                    newRow.Cell(45).Value = newAccountingElements[counter].Investments;                 // 1200
+                    newRow.Cell(46).Value = newAccountingElements[counter].AccountsReceivable;          // 1500
+                    newRow.Cell(47).Value = newAccountingElements[counter].PersonalWithdrawal;
+                    newRow.Cell(48).Value = newAccountingElements[counter].PersonalDeposit;
 
                     SetExcelRowFormulas(newRow);
                     SetExcelRowStyles(newRow);
@@ -414,13 +427,13 @@ namespace AccountingRobot
             var lightGreen = XLColor.FromArgb(0xD8E4BC);
             var lighterGreen = XLColor.FromArgb(0xEBF1DE);
             var green = currentRow % 2 == 0 ? lightGreen : lighterGreen;
-            row.Cells("T","U").Style.Fill.BackgroundColor = green;
+            row.Cells("T", "U").Style.Fill.BackgroundColor = green;
 
             // set background color for investments, withdrawal and deposits
             var lightBlue = XLColor.FromArgb(0xC5D9F1);
-            var lighterBlue = XLColor.FromArgb(0xEAF1FA); 
-             var blue = currentRow % 2 == 0 ? lightBlue : lighterBlue;
-            row.Cells("AS","AV").Style.Fill.BackgroundColor = blue;
+            var lighterBlue = XLColor.FromArgb(0xEAF1FA);
+            var blue = currentRow % 2 == 0 ? lightBlue : lighterBlue;
+            row.Cells("AS", "AV").Style.Fill.BackgroundColor = blue;
 
             // set background color for control sum
             var lightRed = XLColor.FromArgb(0xE6B8B7);
@@ -438,8 +451,8 @@ namespace AccountingRobot
             row.Cell("N").DataType = XLCellValues.Number;
 
             // set style and format for the decimal range
-            row.Cells("P","AX").Style.NumberFormat.Format = "#,##0.00;[Red]-#,##0.00;";
-            row.Cells("P","AX").DataType = XLCellValues.Number;
+            row.Cells("P", "AX").Style.NumberFormat.Format = "#,##0.00;[Red]-#,##0.00;";
+            row.Cells("P", "AX").DataType = XLCellValues.Number;
         }
 
         static void SetExcelTableTotalsRowFunction(IXLTable table)
