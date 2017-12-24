@@ -62,14 +62,21 @@ namespace AccountingRobot
         public static T GetExcelField<T>(IXLTableRow row, string fieldName)
         {
             object value;
-            var item = row.Field(fieldName);
-            if (item.HasFormula)
+            try
             {
-                value = item.ValueCached;
+                var item = row.Field(fieldName);
+                if (item.HasFormula)
+                {
+                    value = item.ValueCached;
+                }
+                else
+                {
+                    value = item.Value;
+                }
             }
-            else
+            catch (Exception)
             {
-                value = item.Value;
+                return default(T);
             }
 
             if (null != value && !"".Equals(value))

@@ -47,12 +47,12 @@ namespace AccountingRobot
             var accountingItems = accountingShopifyItems.OrderBy(o => o.Date).ToList();
 
             // export to excel file
-            var now = DateTime.Now;
-            var fileName = string.Format("Accounting {0:yyyy-MM-dd}.xlsx", now);
-            ExportToExcel(fileName, accountingItems);
+            //var now = DateTime.Now;
+            //var fileName = string.Format("Accounting {0:yyyy-MM-dd}.xlsx", now);
+            //ExportToExcel(fileName, accountingItems);
 
-            //var fileName = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\Accounting Fixed 2017-12-22.xlsx";
-            //UpdateExcelFile(fileName, accountingItems);
+            var fileName = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\Accounting 2017-12-24.xlsx";
+            UpdateExcelFile(fileName, accountingItems);
 
             Console.ReadLine();
         }
@@ -61,67 +61,67 @@ namespace AccountingRobot
         static void ExportToExcel(string filePath, List<AccountingItem> accountingItems)
         {
             DataTable dt = new DataTable();
-            dt.Columns.Add("Control", typeof(String));
+            dt.Columns.Add("Kontroll", typeof(String));
 
             dt.Columns.Add("Periode", typeof(int));
-            dt.Columns.Add("Date", typeof(DateTime));
-            dt.Columns.Add("Number", typeof(int));
-            dt.Columns.Add("ArchiveReference", typeof(long));
+            dt.Columns.Add("Dato", typeof(DateTime));
+            dt.Columns.Add("Bilagsnr.", typeof(int));
+            dt.Columns.Add("Arkivreferanse", typeof(long));
             dt.Columns.Add("Type", typeof(string));
-            dt.Columns.Add("AccountingType", typeof(string));
-            dt.Columns.Add("Text", typeof(string));
-            dt.Columns.Add("CustomerName", typeof(string));
-            dt.Columns.Add("ErrorMessage", typeof(string));
+            dt.Columns.Add("Regnskapstype", typeof(string));
+            dt.Columns.Add("Tekst", typeof(string));
+            dt.Columns.Add("Kundenavn", typeof(string));
+            dt.Columns.Add("Feilmelding", typeof(string));
             dt.Columns.Add("Gateway", typeof(string));
-            dt.Columns.Add("NumSale", typeof(string));
-            dt.Columns.Add("NumPurchase", typeof(string));
-            dt.Columns.Add("PurchaseOtherCurrency", typeof(decimal));
-            dt.Columns.Add("OtherCurrency", typeof(string));
+            dt.Columns.Add("Num Salg", typeof(string));
+            dt.Columns.Add("Num Kjøp", typeof(string));
+            dt.Columns.Add("Kjøp annen valuta", typeof(decimal));
+            dt.Columns.Add("Annen valuta", typeof(string));
 
-            dt.Columns.Add("AccountPaypal", typeof(decimal));           // 1910
-            dt.Columns.Add("AccountStripe", typeof(decimal));           // 1915
-            dt.Columns.Add("AccountVipps", typeof(decimal));            // 1918
-            dt.Columns.Add("AccountBank", typeof(decimal));             // 1920
+            dt.Columns.Add("Paypal", typeof(decimal));           // 1910
+            dt.Columns.Add("Stripe", typeof(decimal));           // 1915
+            dt.Columns.Add("Vipps", typeof(decimal));            // 1918
+            dt.Columns.Add("Bank", typeof(decimal));             // 1920
 
-            dt.Columns.Add("VATPurchase", typeof(decimal));
-            dt.Columns.Add("VATSales", typeof(decimal));
+            dt.Columns.Add("MVA Kjøp", typeof(decimal));
+            dt.Columns.Add("MVA Salg", typeof(decimal));
 
-            dt.Columns.Add("SalesVAT", typeof(decimal));                // 3000
-            dt.Columns.Add("SalesVATExempt", typeof(decimal));          // 3100
+            dt.Columns.Add("Salg mva-pliktig", typeof(decimal));                // 3000
+            dt.Columns.Add("Salg avgiftsfritt", typeof(decimal));          // 3100
 
-            dt.Columns.Add("CostOfGoods", typeof(decimal));             // 4005
-            dt.Columns.Add("CostForReselling", typeof(decimal));        // 4300
-            dt.Columns.Add("CostForSalary", typeof(decimal));           // 5000
-            dt.Columns.Add("CostForSalaryTax", typeof(decimal));        // 5400
-            dt.Columns.Add("CostForDepreciation", typeof(decimal));     // 6000
-            dt.Columns.Add("CostForShipping", typeof(decimal));         // 6100
-            dt.Columns.Add("CostForElectricity", typeof(decimal));      // 6340 
-            dt.Columns.Add("CostForToolsInventory", typeof(decimal));   // 6500
-            dt.Columns.Add("CostForMaintenance", typeof(decimal));      // 6695
-            dt.Columns.Add("CostForFacilities", typeof(decimal));       // 6800 
+            dt.Columns.Add("Varekostnad", typeof(decimal));             // 4005
+            dt.Columns.Add("Forbruk for videresalg", typeof(decimal));        // 4300
+            dt.Columns.Add("Lønn", typeof(decimal));           // 5000
+            dt.Columns.Add("Arb.giver avgift", typeof(decimal));        // 5400
+            dt.Columns.Add("Avskrivninger", typeof(decimal));     // 6000
+            dt.Columns.Add("Frakt", typeof(decimal));         // 6100
+            dt.Columns.Add("Strøm", typeof(decimal));      // 6340 
+            dt.Columns.Add("Verktøy inventar", typeof(decimal));   // 6500
+            dt.Columns.Add("Vedlikehold", typeof(decimal));      // 6695
+            dt.Columns.Add("Kontorkostnader", typeof(decimal));       // 6800 
 
-            dt.Columns.Add("CostOfData", typeof(decimal));              // 6810 
-            dt.Columns.Add("CostOfPhoneInternet", typeof(decimal));     // 6900
-            dt.Columns.Add("CostForTravelAndAllowance", typeof(decimal));// 7140
-            dt.Columns.Add("CostOfAdvertising", typeof(decimal));       // 7330
-            dt.Columns.Add("CostOfOther", typeof(decimal));             // 7700
+            dt.Columns.Add("Datakostnader", typeof(decimal));              // 6810 
+            dt.Columns.Add("Telefon Internett", typeof(decimal));     // 6900
+            dt.Columns.Add("Reise og Diett", typeof(decimal));// 7140
+            dt.Columns.Add("Reklamekostnader", typeof(decimal));       // 7330
+            dt.Columns.Add("Diverse annet", typeof(decimal));             // 7700
 
-            dt.Columns.Add("FeesBank", typeof(decimal));                // 7770
-            dt.Columns.Add("FeesPaypal", typeof(decimal));              // 7780
-            dt.Columns.Add("FeesStripe", typeof(decimal));              // 7785 
+            dt.Columns.Add("Gebyrer Bank", typeof(decimal));                // 7770
+            dt.Columns.Add("Gebyrer Paypal", typeof(decimal));              // 7780
+            dt.Columns.Add("Gebyrer Stripe", typeof(decimal));              // 7785 
 
-            dt.Columns.Add("CostForEstablishment", typeof(decimal));    // 7790
+            dt.Columns.Add("Etableringskostnader", typeof(decimal));    // 7790
 
-            dt.Columns.Add("IncomeFinance", typeof(decimal));           // 8099
-            dt.Columns.Add("CostOfFinance", typeof(decimal));           // 8199
+            dt.Columns.Add("Finansinntekter", typeof(decimal));           // 8099
+            dt.Columns.Add("Finanskostnader", typeof(decimal));           // 8199
 
-            dt.Columns.Add("Investments", typeof(decimal));             // 1200
-            dt.Columns.Add("AccountsReceivable", typeof(decimal));      // 1500
-            dt.Columns.Add("PersonalWithdrawal", typeof(decimal));
-            dt.Columns.Add("PersonalDeposit", typeof(decimal));
+            dt.Columns.Add("Investeringer", typeof(decimal));             // 1200
+            dt.Columns.Add("Kundefordringer", typeof(decimal));      // 1500
+            dt.Columns.Add("Privat uttak", typeof(decimal));
+            dt.Columns.Add("Privat innskudd", typeof(decimal));
 
-            dt.Columns.Add("SumPreRounding", typeof(decimal));
-            dt.Columns.Add("SumRounded", typeof(decimal));
+            dt.Columns.Add("Sum før avrunding", typeof(decimal));
+            dt.Columns.Add("Sum", typeof(decimal));
 
             foreach (var accountingItem in accountingItems)
             {
@@ -189,7 +189,7 @@ namespace AccountingRobot
             // Build Excel spreadsheet using Closed XML
             using (XLWorkbook wb = new XLWorkbook())
             {
-                var ws = wb.Worksheets.Add(dt, "Accounting");
+                var ws = wb.Worksheets.Add(dt, "Bilagsjournal");
                 var table = ws.Tables.First();
                 table.Theme = XLTableTheme.TableStyleLight16;
 
@@ -219,7 +219,7 @@ namespace AccountingRobot
             // i.e. the Number columns is no longer 0
 
             XLWorkbook wb = new XLWorkbook(filePath);
-            IXLWorksheet ws = wb.Worksheet("Accounting");
+            IXLWorksheet ws = wb.Worksheet("Bilagsjournal");
 
             IXLTables tables = ws.Tables;
             IXLTable table = tables.FirstOrDefault();
@@ -231,61 +231,61 @@ namespace AccountingRobot
                 {
                     var accountingItem = new AccountingItem();
 
-                    accountingItem.Date = ExcelUtils.GetExcelField<DateTime>(row, "Date");
-                    accountingItem.Number = ExcelUtils.GetExcelField<int>(row, "Number");
-                    accountingItem.ArchiveReference = ExcelUtils.GetExcelField<long>(row, "ArchiveReference");
+                    accountingItem.Date = ExcelUtils.GetExcelField<DateTime>(row, "Dato");
+                    accountingItem.Number = ExcelUtils.GetExcelField<int>(row, "Bilagsnr.");
+                    accountingItem.ArchiveReference = ExcelUtils.GetExcelField<long>(row, "Arkivreferanse");
                     accountingItem.Type = ExcelUtils.GetExcelField<string>(row, "Type");
-                    accountingItem.AccountingType = ExcelUtils.GetExcelField<string>(row, "AccountingType");
-                    accountingItem.Text = ExcelUtils.GetExcelField<string>(row, "Text");
-                    accountingItem.CustomerName = ExcelUtils.GetExcelField<string>(row, "CustomerName");
-                    accountingItem.ErrorMessage = ExcelUtils.GetExcelField<string>(row, "ErrorMessage");
+                    accountingItem.AccountingType = ExcelUtils.GetExcelField<string>(row, "Regnskapstype");
+                    accountingItem.Text = ExcelUtils.GetExcelField<string>(row, "Tekst");
+                    accountingItem.CustomerName = ExcelUtils.GetExcelField<string>(row, "Kundenavn");
+                    accountingItem.ErrorMessage = ExcelUtils.GetExcelField<string>(row, "Feilmelding");
                     accountingItem.Gateway = ExcelUtils.GetExcelField<string>(row, "Gateway");
-                    accountingItem.NumSale = ExcelUtils.GetExcelField<string>(row, "NumSale");
-                    accountingItem.NumPurchase = ExcelUtils.GetExcelField<string>(row, "NumPurchase");
-                    accountingItem.PurchaseOtherCurrency = ExcelUtils.GetExcelField<decimal>(row, "PurchaseOtherCurrency");
-                    accountingItem.OtherCurrency = ExcelUtils.GetExcelField<string>(row, "OtherCurrency");
+                    accountingItem.NumSale = ExcelUtils.GetExcelField<string>(row, "Num Salg");
+                    accountingItem.NumPurchase = ExcelUtils.GetExcelField<string>(row, "Num Kjøp");
+                    accountingItem.PurchaseOtherCurrency = ExcelUtils.GetExcelField<decimal>(row, "Kjøp annen valuta");
+                    accountingItem.OtherCurrency = ExcelUtils.GetExcelField<string>(row, "Annen valuta");
 
-                    accountingItem.AccountPaypal = ExcelUtils.GetExcelField<decimal>(row, "AccountPaypal");	// 1910
-                    accountingItem.AccountStripe = ExcelUtils.GetExcelField<decimal>(row, "AccountStripe");	// 1915
-                    accountingItem.AccountVipps = ExcelUtils.GetExcelField<decimal>(row, "AccountVipps");	// 1918
-                    accountingItem.AccountBank = ExcelUtils.GetExcelField<decimal>(row, "AccountBank");	// 1920
+                    accountingItem.AccountPaypal = ExcelUtils.GetExcelField<decimal>(row, "Paypal");	// 1910
+                    accountingItem.AccountStripe = ExcelUtils.GetExcelField<decimal>(row, "Stripe");	// 1915
+                    accountingItem.AccountVipps = ExcelUtils.GetExcelField<decimal>(row, "Vipps");	// 1918
+                    accountingItem.AccountBank = ExcelUtils.GetExcelField<decimal>(row, "Bank");	// 1920
 
-                    accountingItem.VATPurchase = ExcelUtils.GetExcelField<decimal>(row, "VATPurchase");
-                    accountingItem.VATSales = ExcelUtils.GetExcelField<decimal>(row, "VATSales");
+                    accountingItem.VATPurchase = ExcelUtils.GetExcelField<decimal>(row, "MVA Kjøp");
+                    accountingItem.VATSales = ExcelUtils.GetExcelField<decimal>(row, "MVA Salg");
 
-                    accountingItem.SalesVAT = ExcelUtils.GetExcelField<decimal>(row, "SalesVAT");	// 3000
-                    accountingItem.SalesVATExempt = ExcelUtils.GetExcelField<decimal>(row, "SalesVATExempt");	// 3100
+                    accountingItem.SalesVAT = ExcelUtils.GetExcelField<decimal>(row, "Salg mva-pliktig");	// 3000
+                    accountingItem.SalesVATExempt = ExcelUtils.GetExcelField<decimal>(row, "Salg avgiftsfritt");	// 3100
 
-                    accountingItem.CostOfGoods = ExcelUtils.GetExcelField<decimal>(row, "CostOfGoods");	// 4005
-                    accountingItem.CostForReselling = ExcelUtils.GetExcelField<decimal>(row, "CostForReselling");	// 4300
-                    accountingItem.CostForSalary = ExcelUtils.GetExcelField<decimal>(row, "CostForSalary");	// 5000
-                    accountingItem.CostForSalaryTax = ExcelUtils.GetExcelField<decimal>(row, "CostForSalaryTax");	// 5400
-                    accountingItem.CostForDepreciation = ExcelUtils.GetExcelField<decimal>(row, "CostForDepreciation");	// 6000
-                    accountingItem.CostForShipping = ExcelUtils.GetExcelField<decimal>(row, "CostForShipping");	// 6100
-                    accountingItem.CostForElectricity = ExcelUtils.GetExcelField<decimal>(row, "CostForElectricity");	// 6340 
-                    accountingItem.CostForToolsInventory = ExcelUtils.GetExcelField<decimal>(row, "CostForToolsInventory");	// 6500
-                    accountingItem.CostForMaintenance = ExcelUtils.GetExcelField<decimal>(row, "CostForMaintenance");	// 6695
-                    accountingItem.CostForFacilities = ExcelUtils.GetExcelField<decimal>(row, "CostForFacilities");	// 6800 
+                    accountingItem.CostOfGoods = ExcelUtils.GetExcelField<decimal>(row, "Varekostnad");	// 4005
+                    accountingItem.CostForReselling = ExcelUtils.GetExcelField<decimal>(row, "Forbruk for videresalg");	// 4300
+                    accountingItem.CostForSalary = ExcelUtils.GetExcelField<decimal>(row, "Lønn");	// 5000
+                    accountingItem.CostForSalaryTax = ExcelUtils.GetExcelField<decimal>(row, "Arb.giver avgift");	// 5400
+                    accountingItem.CostForDepreciation = ExcelUtils.GetExcelField<decimal>(row, "Avskrivninger");	// 6000
+                    accountingItem.CostForShipping = ExcelUtils.GetExcelField<decimal>(row, "Frakt");	// 6100
+                    accountingItem.CostForElectricity = ExcelUtils.GetExcelField<decimal>(row, "Strøm");	// 6340 
+                    accountingItem.CostForToolsInventory = ExcelUtils.GetExcelField<decimal>(row, "Verktøy inventar");	// 6500
+                    accountingItem.CostForMaintenance = ExcelUtils.GetExcelField<decimal>(row, "Vedlikehold");	// 6695
+                    accountingItem.CostForFacilities = ExcelUtils.GetExcelField<decimal>(row, "Kontorkostnader");	// 6800 
 
-                    accountingItem.CostOfData = ExcelUtils.GetExcelField<decimal>(row, "CostOfData");	// 6810 
-                    accountingItem.CostOfPhoneInternet = ExcelUtils.GetExcelField<decimal>(row, "CostOfPhoneInternet");	// 6900
-                    accountingItem.CostForTravelAndAllowance = ExcelUtils.GetExcelField<decimal>(row, "CostForTravelAndAllowance");	// 7140
-                    accountingItem.CostOfAdvertising = ExcelUtils.GetExcelField<decimal>(row, "CostOfAdvertising");	// 7330
-                    accountingItem.CostOfOther = ExcelUtils.GetExcelField<decimal>(row, "CostOfOther");	// 7700
+                    accountingItem.CostOfData = ExcelUtils.GetExcelField<decimal>(row, "Datakostnader");	// 6810 
+                    accountingItem.CostOfPhoneInternet = ExcelUtils.GetExcelField<decimal>(row, "Telefon Internett");	// 6900
+                    accountingItem.CostForTravelAndAllowance = ExcelUtils.GetExcelField<decimal>(row, "Reise og Diett");	// 7140
+                    accountingItem.CostOfAdvertising = ExcelUtils.GetExcelField<decimal>(row, "Reklamekostnader");	// 7330
+                    accountingItem.CostOfOther = ExcelUtils.GetExcelField<decimal>(row, "Diverse annet");	// 7700
 
-                    accountingItem.FeesBank = ExcelUtils.GetExcelField<decimal>(row, "FeesBank");	// 7770
-                    accountingItem.FeesPaypal = ExcelUtils.GetExcelField<decimal>(row, "FeesPaypal");	// 7780
-                    accountingItem.FeesStripe = ExcelUtils.GetExcelField<decimal>(row, "FeesStripe");	// 7785 
+                    accountingItem.FeesBank = ExcelUtils.GetExcelField<decimal>(row, "Gebyrer Bank");	// 7770
+                    accountingItem.FeesPaypal = ExcelUtils.GetExcelField<decimal>(row, "Gebyrer Paypal");	// 7780
+                    accountingItem.FeesStripe = ExcelUtils.GetExcelField<decimal>(row, "Gebyrer Stripe");	// 7785 
 
-                    accountingItem.CostForEstablishment = ExcelUtils.GetExcelField<decimal>(row, "CostForEstablishment");	// 7790
+                    accountingItem.CostForEstablishment = ExcelUtils.GetExcelField<decimal>(row, "Etableringskostnader");	// 7790
 
-                    accountingItem.IncomeFinance = ExcelUtils.GetExcelField<decimal>(row, "IncomeFinance");	// 8099
-                    accountingItem.CostOfFinance = ExcelUtils.GetExcelField<decimal>(row, "CostOfFinance");	// 8199
+                    accountingItem.IncomeFinance = ExcelUtils.GetExcelField<decimal>(row, "Finansinntekter");	// 8099
+                    accountingItem.CostOfFinance = ExcelUtils.GetExcelField<decimal>(row, "Finanskostnader");	// 8199
 
-                    accountingItem.Investments = ExcelUtils.GetExcelField<decimal>(row, "Investments");	// 1200
-                    accountingItem.AccountsReceivable = ExcelUtils.GetExcelField<decimal>(row, "AccountsReceivable");	// 1500
-                    accountingItem.PersonalWithdrawal = ExcelUtils.GetExcelField<decimal>(row, "PersonalWithdrawal");
-                    accountingItem.PersonalDeposit = ExcelUtils.GetExcelField<decimal>(row, "PersonalDeposit");
+                    accountingItem.Investments = ExcelUtils.GetExcelField<decimal>(row, "Investeringer");	// 1200
+                    accountingItem.AccountsReceivable = ExcelUtils.GetExcelField<decimal>(row, "Kundefordringer");	// 1500
+                    accountingItem.PersonalWithdrawal = ExcelUtils.GetExcelField<decimal>(row, "Privat uttak");
+                    accountingItem.PersonalDeposit = ExcelUtils.GetExcelField<decimal>(row, "Privat innskudd");
 
                     oldAccountingSpreadsheet.Add(accountingItem);
                 }
@@ -447,47 +447,47 @@ namespace AccountingRobot
             table.ShowTotalsRow = true;
 
             // set sum functions for each of the table columns 
-            table.Field("AccountPaypal").TotalsRowFunction = XLTotalsRowFunction.Sum;              // 1910
-            table.Field("AccountStripe").TotalsRowFunction = XLTotalsRowFunction.Sum;              // 1915
-            table.Field("AccountVipps").TotalsRowFunction = XLTotalsRowFunction.Sum;               // 1918
-            table.Field("AccountBank").TotalsRowFunction = XLTotalsRowFunction.Sum;                // 1920
+            table.Field("Paypal").TotalsRowFunction = XLTotalsRowFunction.Sum;              // 1910
+            table.Field("Stripe").TotalsRowFunction = XLTotalsRowFunction.Sum;              // 1915
+            table.Field("Vipps").TotalsRowFunction = XLTotalsRowFunction.Sum;               // 1918
+            table.Field("Bank").TotalsRowFunction = XLTotalsRowFunction.Sum;                // 1920
 
-            table.Field("VATPurchase").TotalsRowFunction = XLTotalsRowFunction.Sum;
-            table.Field("VATSales").TotalsRowFunction = XLTotalsRowFunction.Sum;
+            table.Field("MVA Kjøp").TotalsRowFunction = XLTotalsRowFunction.Sum;
+            table.Field("MVA Salg").TotalsRowFunction = XLTotalsRowFunction.Sum;
 
-            table.Field("SalesVAT").TotalsRowFunction = XLTotalsRowFunction.Sum;                   // 3000
-            table.Field("SalesVATExempt").TotalsRowFunction = XLTotalsRowFunction.Sum;             // 3100
+            table.Field("Salg mva-pliktig").TotalsRowFunction = XLTotalsRowFunction.Sum;                   // 3000
+            table.Field("Salg avgiftsfritt").TotalsRowFunction = XLTotalsRowFunction.Sum;             // 3100
 
-            table.Field("CostOfGoods").TotalsRowFunction = XLTotalsRowFunction.Sum;                // 4005
-            table.Field("CostForReselling").TotalsRowFunction = XLTotalsRowFunction.Sum;           // 4300
-            table.Field("CostForSalary").TotalsRowFunction = XLTotalsRowFunction.Sum;              // 5000
-            table.Field("CostForSalaryTax").TotalsRowFunction = XLTotalsRowFunction.Sum;           // 5400
-            table.Field("CostForDepreciation").TotalsRowFunction = XLTotalsRowFunction.Sum;        // 6000
-            table.Field("CostForShipping").TotalsRowFunction = XLTotalsRowFunction.Sum;            // 6100
-            table.Field("CostForElectricity").TotalsRowFunction = XLTotalsRowFunction.Sum;         // 6340 
-            table.Field("CostForToolsInventory").TotalsRowFunction = XLTotalsRowFunction.Sum;      // 6500
-            table.Field("CostForMaintenance").TotalsRowFunction = XLTotalsRowFunction.Sum;         // 6695
-            table.Field("CostForFacilities").TotalsRowFunction = XLTotalsRowFunction.Sum;          // 6800 
+            table.Field("Varekostnad").TotalsRowFunction = XLTotalsRowFunction.Sum;                // 4005
+            table.Field("Forbruk for videresalg").TotalsRowFunction = XLTotalsRowFunction.Sum;           // 4300
+            table.Field("Lønn").TotalsRowFunction = XLTotalsRowFunction.Sum;              // 5000
+            table.Field("Arb.giver avgift").TotalsRowFunction = XLTotalsRowFunction.Sum;           // 5400
+            table.Field("Avskrivninger").TotalsRowFunction = XLTotalsRowFunction.Sum;        // 6000
+            table.Field("Frakt").TotalsRowFunction = XLTotalsRowFunction.Sum;            // 6100
+            table.Field("Strøm").TotalsRowFunction = XLTotalsRowFunction.Sum;         // 6340 
+            table.Field("Verktøy inventar").TotalsRowFunction = XLTotalsRowFunction.Sum;      // 6500
+            table.Field("Vedlikehold").TotalsRowFunction = XLTotalsRowFunction.Sum;         // 6695
+            table.Field("Kontorkostnader").TotalsRowFunction = XLTotalsRowFunction.Sum;          // 6800 
 
-            table.Field("CostOfData").TotalsRowFunction = XLTotalsRowFunction.Sum;                 // 6810 
-            table.Field("CostOfPhoneInternet").TotalsRowFunction = XLTotalsRowFunction.Sum;        // 6900
-            table.Field("CostForTravelAndAllowance").TotalsRowFunction = XLTotalsRowFunction.Sum;  // 7140
-            table.Field("CostOfAdvertising").TotalsRowFunction = XLTotalsRowFunction.Sum;          // 7330
-            table.Field("CostOfOther").TotalsRowFunction = XLTotalsRowFunction.Sum;                // 7700
+            table.Field("Datakostnader").TotalsRowFunction = XLTotalsRowFunction.Sum;                 // 6810 
+            table.Field("Telefon Internett").TotalsRowFunction = XLTotalsRowFunction.Sum;        // 6900
+            table.Field("Reise og Diett").TotalsRowFunction = XLTotalsRowFunction.Sum;  // 7140
+            table.Field("Reklamekostnader").TotalsRowFunction = XLTotalsRowFunction.Sum;          // 7330
+            table.Field("Diverse annet").TotalsRowFunction = XLTotalsRowFunction.Sum;                // 7700
 
-            table.Field("FeesBank").TotalsRowFunction = XLTotalsRowFunction.Sum;                   // 7770
-            table.Field("FeesPaypal").TotalsRowFunction = XLTotalsRowFunction.Sum;                 // 7780
-            table.Field("FeesStripe").TotalsRowFunction = XLTotalsRowFunction.Sum;                 // 7785 
+            table.Field("Gebyrer Bank").TotalsRowFunction = XLTotalsRowFunction.Sum;                   // 7770
+            table.Field("Gebyrer Paypal").TotalsRowFunction = XLTotalsRowFunction.Sum;                 // 7780
+            table.Field("Gebyrer Stripe").TotalsRowFunction = XLTotalsRowFunction.Sum;                 // 7785 
 
-            table.Field("CostForEstablishment").TotalsRowFunction = XLTotalsRowFunction.Sum;       // 7790
+            table.Field("Etableringskostnader").TotalsRowFunction = XLTotalsRowFunction.Sum;       // 7790
 
-            table.Field("IncomeFinance").TotalsRowFunction = XLTotalsRowFunction.Sum;              // 8099
-            table.Field("CostOfFinance").TotalsRowFunction = XLTotalsRowFunction.Sum;              // 8199
+            table.Field("Finansinntekter").TotalsRowFunction = XLTotalsRowFunction.Sum;              // 8099
+            table.Field("Finanskostnader").TotalsRowFunction = XLTotalsRowFunction.Sum;              // 8199
 
-            table.Field("Investments").TotalsRowFunction = XLTotalsRowFunction.Sum;                // 1200
-            table.Field("AccountsReceivable").TotalsRowFunction = XLTotalsRowFunction.Sum;         // 1500
-            table.Field("PersonalWithdrawal").TotalsRowFunction = XLTotalsRowFunction.Sum;
-            table.Field("PersonalDeposit").TotalsRowFunction = XLTotalsRowFunction.Sum;
+            table.Field("Investeringer").TotalsRowFunction = XLTotalsRowFunction.Sum;                // 1200
+            table.Field("Kundefordringer").TotalsRowFunction = XLTotalsRowFunction.Sum;         // 1500
+            table.Field("Privat uttak").TotalsRowFunction = XLTotalsRowFunction.Sum;
+            table.Field("Privat innskudd").TotalsRowFunction = XLTotalsRowFunction.Sum;
 
         }
         #endregion
