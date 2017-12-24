@@ -47,176 +47,17 @@ namespace AccountingRobot
             var accountingItems = accountingShopifyItems.OrderBy(o => o.Date).ToList();
 
             // export to excel file
-            //var now = DateTime.Now;
-            //var fileName = string.Format("Accounting {0:yyyy-MM-dd}.xlsx", now);
-            //ExportToExcel(fileName, accountingItems);
+            var now = DateTime.Now;
+            var fileName = string.Format("Accounting {0:yyyy-MM-dd}.xlsx", now);
+            ExportToExcel(fileName, accountingItems);
 
-            var fileName = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\Accounting Fixed 2017-12-22.xlsx";
-            UpdateExcelFile(fileName, accountingItems);
+            //var fileName = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\Accounting Fixed 2017-12-22.xlsx";
+            //UpdateExcelFile(fileName, accountingItems);
 
             Console.ReadLine();
         }
 
-        static void UpdateExcelFile(string filePath, List<AccountingItem> newAccountingItems)
-        {
-            // go through each row and check if it has already been "fixed".
-            // i.e. the Number columns is no longer 0
-
-            XLWorkbook wb = new XLWorkbook(filePath);
-            IXLWorksheet ws = wb.Worksheet("Accounting");
-
-            IXLTables tables = ws.Tables;
-            IXLTable table = tables.FirstOrDefault();
-
-            var oldAccountingSpreadsheet = new List<AccountingItem>();
-            if (table != null)
-            {
-                int currentRow = 0;
-                foreach (var row in table.DataRange.Rows())
-                {
-                    currentRow++;
-                    var accountingItem = new AccountingItem();
-
-                    accountingItem.Date = ExcelUtils.GetExcelField<DateTime>(row, "Date");
-                    accountingItem.Number = ExcelUtils.GetExcelField<int>(row, "Number");
-                    accountingItem.ArchiveReference = ExcelUtils.GetExcelField<long>(row, "ArchiveReference");
-                    accountingItem.Type = ExcelUtils.GetExcelField<string>(row, "Type");
-                    accountingItem.AccountingType = ExcelUtils.GetExcelField<string>(row, "AccountingType");
-                    accountingItem.Text = ExcelUtils.GetExcelField<string>(row, "Text");
-                    accountingItem.CustomerName = ExcelUtils.GetExcelField<string>(row, "CustomerName");
-                    accountingItem.ErrorMessage = ExcelUtils.GetExcelField<string>(row, "ErrorMessage");
-                    accountingItem.Gateway = ExcelUtils.GetExcelField<string>(row, "Gateway");
-                    accountingItem.NumSale = ExcelUtils.GetExcelField<string>(row, "NumSale");
-                    accountingItem.NumPurchase = ExcelUtils.GetExcelField<string>(row, "NumPurchase");
-                    accountingItem.PurchaseOtherCurrency = ExcelUtils.GetExcelField<decimal>(row, "PurchaseOtherCurrency");
-                    accountingItem.OtherCurrency = ExcelUtils.GetExcelField<string>(row, "OtherCurrency");
-
-                    accountingItem.AccountPaypal = ExcelUtils.GetExcelField<decimal>(row, "AccountPaypal");	// 1910
-                    accountingItem.AccountStripe = ExcelUtils.GetExcelField<decimal>(row, "AccountStripe");	// 1915
-                    accountingItem.AccountVipps = ExcelUtils.GetExcelField<decimal>(row, "AccountVipps");	// 1918
-                    accountingItem.AccountBank = ExcelUtils.GetExcelField<decimal>(row, "AccountBank");	// 1920
-
-                    accountingItem.VATPurchase = ExcelUtils.GetExcelField<decimal>(row, "VATPurchase");
-                    accountingItem.VATSales = ExcelUtils.GetExcelField<decimal>(row, "VATSales");
-
-                    accountingItem.SalesVAT = ExcelUtils.GetExcelField<decimal>(row, "SalesVAT");	// 3000
-                    accountingItem.SalesVATExempt = ExcelUtils.GetExcelField<decimal>(row, "SalesVATExempt");	// 3100
-
-                    accountingItem.CostOfGoods = ExcelUtils.GetExcelField<decimal>(row, "CostOfGoods");	// 4005
-                    accountingItem.CostForReselling = ExcelUtils.GetExcelField<decimal>(row, "CostForReselling");	// 4300
-                    accountingItem.CostForSalary = ExcelUtils.GetExcelField<decimal>(row, "CostForSalary");	// 5000
-                    accountingItem.CostForSalaryTax = ExcelUtils.GetExcelField<decimal>(row, "CostForSalaryTax");	// 5400
-                    accountingItem.CostForDepreciation = ExcelUtils.GetExcelField<decimal>(row, "CostForDepreciation");	// 6000
-                    accountingItem.CostForShipping = ExcelUtils.GetExcelField<decimal>(row, "CostForShipping");	// 6100
-                    accountingItem.CostForElectricity = ExcelUtils.GetExcelField<decimal>(row, "CostForElectricity");	// 6340 
-                    accountingItem.CostForToolsInventory = ExcelUtils.GetExcelField<decimal>(row, "CostForToolsInventory");	// 6500
-                    accountingItem.CostForMaintenance = ExcelUtils.GetExcelField<decimal>(row, "CostForMaintenance");	// 6695
-                    accountingItem.CostForFacilities = ExcelUtils.GetExcelField<decimal>(row, "CostForFacilities");	// 6800 
-
-                    accountingItem.CostOfData = ExcelUtils.GetExcelField<decimal>(row, "CostOfData");	// 6810 
-                    accountingItem.CostOfPhoneInternet = ExcelUtils.GetExcelField<decimal>(row, "CostOfPhoneInternet");	// 6900
-                    accountingItem.CostForTravelAndAllowance = ExcelUtils.GetExcelField<decimal>(row, "CostForTravelAndAllowance");	// 7140
-                    accountingItem.CostOfAdvertising = ExcelUtils.GetExcelField<decimal>(row, "CostOfAdvertising");	// 7330
-                    accountingItem.CostOfOther = ExcelUtils.GetExcelField<decimal>(row, "CostOfOther");	// 7700
-
-                    accountingItem.FeesBank = ExcelUtils.GetExcelField<decimal>(row, "FeesBank");	// 7770
-                    accountingItem.FeesPaypal = ExcelUtils.GetExcelField<decimal>(row, "FeesPaypal");	// 7780
-                    accountingItem.FeesStripe = ExcelUtils.GetExcelField<decimal>(row, "FeesStripe");	// 7785 
-
-                    accountingItem.CostForEstablishment = ExcelUtils.GetExcelField<decimal>(row, "CostForEstablishment");	// 7790
-
-                    accountingItem.IncomeFinance = ExcelUtils.GetExcelField<decimal>(row, "IncomeFinance");	// 8099
-                    accountingItem.CostOfFinance = ExcelUtils.GetExcelField<decimal>(row, "CostOfFinance");	// 8199
-
-                    accountingItem.Investments = ExcelUtils.GetExcelField<decimal>(row, "Investments");	// 1200
-                    accountingItem.AccountsReceivable = ExcelUtils.GetExcelField<decimal>(row, "AccountsReceivable");	// 1500
-                    accountingItem.PersonalWithdrawal = ExcelUtils.GetExcelField<decimal>(row, "PersonalWithdrawal");
-                    accountingItem.PersonalDeposit = ExcelUtils.GetExcelField<decimal>(row, "PersonalDeposit");
-
-                    oldAccountingSpreadsheet.Add(accountingItem);
-                }
-
-                // turn off totals row before adding more rows
-                table.ShowTotalsRow = false;
-
-                // add more rows
-                var firstNotSecond = newAccountingItems.Except(oldAccountingSpreadsheet).ToList();
-                var secondNotFirst = oldAccountingSpreadsheet.Except(newAccountingItems).ToList();
-                var newRows = table.InsertRowsBelow(firstNotSecond.Count(), true);
-
-                var counter = 0;
-                foreach (var newRow in newRows)
-                {
-                    newRow.Cell(1).Value = "";
-                    newRow.Cell(2).Value = firstNotSecond[counter].Periode;
-                    newRow.Cell(3).Value = firstNotSecond[counter].Date;
-                    newRow.Cell(4).Value = firstNotSecond[counter].Number;
-                    newRow.Cell(5).Value = firstNotSecond[counter].ArchiveReference;
-                    newRow.Cell(6).Value = firstNotSecond[counter].Type;
-                    newRow.Cell(7).Value = firstNotSecond[counter].AccountingType;
-                    newRow.Cell(8).Value = firstNotSecond[counter].Text;
-                    newRow.Cell(9).Value = firstNotSecond[counter].CustomerName;
-                    newRow.Cell(10).Value = firstNotSecond[counter].ErrorMessage;
-                    newRow.Cell(11).Value = firstNotSecond[counter].Gateway;
-                    newRow.Cell(12).Value = firstNotSecond[counter].NumSale;
-                    newRow.Cell(13).Value = firstNotSecond[counter].NumPurchase;
-                    newRow.Cell(14).Value = firstNotSecond[counter].PurchaseOtherCurrency;
-                    newRow.Cell(15).Value = firstNotSecond[counter].OtherCurrency;
-
-                    newRow.Cell(16).Value = firstNotSecond[counter].AccountPaypal;               // 1910
-                    newRow.Cell(17).Value = firstNotSecond[counter].AccountStripe;               // 1915
-                    newRow.Cell(18).Value = firstNotSecond[counter].AccountVipps;                // 1918
-                    newRow.Cell(19).Value = firstNotSecond[counter].AccountBank;                 // 1920
-
-                    newRow.Cell(20).Value = firstNotSecond[counter].VATPurchase;
-                    newRow.Cell(21).Value = firstNotSecond[counter].VATSales;
-
-                    newRow.Cell(22).Value = firstNotSecond[counter].SalesVAT;                    // 3000
-                    newRow.Cell(23).Value = firstNotSecond[counter].SalesVATExempt;              // 3100
-
-                    newRow.Cell(24).Value = firstNotSecond[counter].CostOfGoods;                 // 4005
-                    newRow.Cell(25).Value = firstNotSecond[counter].CostForReselling;            // 4300
-                    newRow.Cell(26).Value = firstNotSecond[counter].CostForSalary;               // 5000
-                    newRow.Cell(27).Value = firstNotSecond[counter].CostForSalaryTax;            // 5400
-                    newRow.Cell(28).Value = firstNotSecond[counter].CostForDepreciation;         // 6000
-                    newRow.Cell(29).Value = firstNotSecond[counter].CostForShipping;             // 6100
-                    newRow.Cell(30).Value = firstNotSecond[counter].CostForElectricity;          // 6340 
-                    newRow.Cell(31).Value = firstNotSecond[counter].CostForToolsInventory;       // 6500
-                    newRow.Cell(32).Value = firstNotSecond[counter].CostForMaintenance;          // 6695
-                    newRow.Cell(33).Value = firstNotSecond[counter].CostForFacilities;           // 6800 
-
-                    newRow.Cell(34).Value = firstNotSecond[counter].CostOfData;                  // 6810 
-                    newRow.Cell(35).Value = firstNotSecond[counter].CostOfPhoneInternet;         // 6900
-                    newRow.Cell(36).Value = firstNotSecond[counter].CostForTravelAndAllowance;   // 7140
-                    newRow.Cell(37).Value = firstNotSecond[counter].CostOfAdvertising;           // 7330
-                    newRow.Cell(38).Value = firstNotSecond[counter].CostOfOther;                 // 7700
-
-                    newRow.Cell(39).Value = firstNotSecond[counter].FeesBank;                    // 7770
-                    newRow.Cell(40).Value = firstNotSecond[counter].FeesPaypal;                  // 7780
-                    newRow.Cell(41).Value = firstNotSecond[counter].FeesStripe;                  // 7785 
-
-                    newRow.Cell(42).Value = firstNotSecond[counter].CostForEstablishment;        // 7790
-
-                    newRow.Cell(43).Value = firstNotSecond[counter].IncomeFinance;               // 8099
-                    newRow.Cell(44).Value = firstNotSecond[counter].CostOfFinance;               // 8199
-
-                    newRow.Cell(45).Value = firstNotSecond[counter].Investments;                 // 1200
-                    newRow.Cell(46).Value = firstNotSecond[counter].AccountsReceivable;          // 1500
-                    newRow.Cell(47).Value = firstNotSecond[counter].PersonalWithdrawal;
-                    newRow.Cell(48).Value = firstNotSecond[counter].PersonalDeposit;
-
-                    SetRowFormulas(newRow);
-
-                    counter++;
-                }
-
-                // turn on table total rows and set the functions for each of the relevant columns
-                SetTableTotalsRowFunction(table);
-            }
-
-            wb.SaveAs(@"test.xlsx");
-        }
-
+        #region Excel Methods
         static void ExportToExcel(string filePath, List<AccountingItem> accountingItems)
         {
             DataTable dt = new DataTable();
@@ -350,48 +191,19 @@ namespace AccountingRobot
             {
                 var ws = wb.Worksheets.Add(dt, "Accounting");
                 var table = ws.Tables.First();
-                table.Theme = XLTableTheme.TableStyleMedium15;
+                table.Theme = XLTableTheme.TableStyleLight16;
 
                 // turn on table total rows and set the functions for each of the relevant columns
-                SetTableTotalsRowFunction(table);
+                SetExcelTableTotalsRowFunction(table);
 
                 if (table != null)
                 {
                     foreach (var row in table.DataRange.Rows())
                     {
-                        SetRowFormulas(row);
+                        SetExcelRowFormulas(row);
+                        SetExcelRowStyles(row);
                     }
                 }
-
-                // set font color for control column
-                table.Columns("A").Style.Font.FontColor = XLColor.Red;
-                table.Columns("A").Style.Font.Bold = true;
-
-                // set background color for VAT
-                var lightGreen = XLColor.FromArgb(0xD8E4BC);
-                table.Columns("T:U").Style.Fill.BackgroundColor = lightGreen;
-
-                // set background color for investments, withdrawal and deposits
-                var lightBlue = XLColor.FromArgb(0xC5D9F1);
-                table.Columns("AS:AV").Style.Fill.BackgroundColor = lightBlue;
-
-                // set background color for control sum
-                var lightRed = XLColor.FromArgb(0xE6B8B7);
-                table.Columns("AX").Style.Fill.BackgroundColor = lightRed;
-
-                // set column formats
-                ws.Range("C2:C9999").Style.NumberFormat.Format = "dd.MM.yyyy";
-                ws.Range("E2:E9999").Style.NumberFormat.Format = "####################";
-
-                // Custom formats for numbers in Excel are entered in this format:
-                // positive number format;negative number format;zero format;text format
-                ws.Range("N2:N9999").Style.NumberFormat.Format = "#,##0.00;[Red]-#,##0.00;";
-                ws.Range("N2:N9999").DataType = XLCellValues.Number;
-
-                // set style and format for the decimal range
-                var decimalRange = ws.Range("P2:AX9999");
-                decimalRange.Style.NumberFormat.Format = "#,##0.00;[Red]-#,##0.00;";
-                decimalRange.DataType = XLCellValues.Number;
 
                 // resize
                 ws.Columns().AdjustToContents();  // Adjust column width
@@ -401,7 +213,170 @@ namespace AccountingRobot
             }
         }
 
-        static void SetRowFormulas(IXLRangeRow row)
+        static void UpdateExcelFile(string filePath, List<AccountingItem> newAccountingItems)
+        {
+            // go through each row and check if it has already been "fixed".
+            // i.e. the Number columns is no longer 0
+
+            XLWorkbook wb = new XLWorkbook(filePath);
+            IXLWorksheet ws = wb.Worksheet("Accounting");
+
+            IXLTables tables = ws.Tables;
+            IXLTable table = tables.FirstOrDefault();
+
+            var oldAccountingSpreadsheet = new List<AccountingItem>();
+            if (table != null)
+            {
+                foreach (var row in table.DataRange.Rows())
+                {
+                    var accountingItem = new AccountingItem();
+
+                    accountingItem.Date = ExcelUtils.GetExcelField<DateTime>(row, "Date");
+                    accountingItem.Number = ExcelUtils.GetExcelField<int>(row, "Number");
+                    accountingItem.ArchiveReference = ExcelUtils.GetExcelField<long>(row, "ArchiveReference");
+                    accountingItem.Type = ExcelUtils.GetExcelField<string>(row, "Type");
+                    accountingItem.AccountingType = ExcelUtils.GetExcelField<string>(row, "AccountingType");
+                    accountingItem.Text = ExcelUtils.GetExcelField<string>(row, "Text");
+                    accountingItem.CustomerName = ExcelUtils.GetExcelField<string>(row, "CustomerName");
+                    accountingItem.ErrorMessage = ExcelUtils.GetExcelField<string>(row, "ErrorMessage");
+                    accountingItem.Gateway = ExcelUtils.GetExcelField<string>(row, "Gateway");
+                    accountingItem.NumSale = ExcelUtils.GetExcelField<string>(row, "NumSale");
+                    accountingItem.NumPurchase = ExcelUtils.GetExcelField<string>(row, "NumPurchase");
+                    accountingItem.PurchaseOtherCurrency = ExcelUtils.GetExcelField<decimal>(row, "PurchaseOtherCurrency");
+                    accountingItem.OtherCurrency = ExcelUtils.GetExcelField<string>(row, "OtherCurrency");
+
+                    accountingItem.AccountPaypal = ExcelUtils.GetExcelField<decimal>(row, "AccountPaypal");	// 1910
+                    accountingItem.AccountStripe = ExcelUtils.GetExcelField<decimal>(row, "AccountStripe");	// 1915
+                    accountingItem.AccountVipps = ExcelUtils.GetExcelField<decimal>(row, "AccountVipps");	// 1918
+                    accountingItem.AccountBank = ExcelUtils.GetExcelField<decimal>(row, "AccountBank");	// 1920
+
+                    accountingItem.VATPurchase = ExcelUtils.GetExcelField<decimal>(row, "VATPurchase");
+                    accountingItem.VATSales = ExcelUtils.GetExcelField<decimal>(row, "VATSales");
+
+                    accountingItem.SalesVAT = ExcelUtils.GetExcelField<decimal>(row, "SalesVAT");	// 3000
+                    accountingItem.SalesVATExempt = ExcelUtils.GetExcelField<decimal>(row, "SalesVATExempt");	// 3100
+
+                    accountingItem.CostOfGoods = ExcelUtils.GetExcelField<decimal>(row, "CostOfGoods");	// 4005
+                    accountingItem.CostForReselling = ExcelUtils.GetExcelField<decimal>(row, "CostForReselling");	// 4300
+                    accountingItem.CostForSalary = ExcelUtils.GetExcelField<decimal>(row, "CostForSalary");	// 5000
+                    accountingItem.CostForSalaryTax = ExcelUtils.GetExcelField<decimal>(row, "CostForSalaryTax");	// 5400
+                    accountingItem.CostForDepreciation = ExcelUtils.GetExcelField<decimal>(row, "CostForDepreciation");	// 6000
+                    accountingItem.CostForShipping = ExcelUtils.GetExcelField<decimal>(row, "CostForShipping");	// 6100
+                    accountingItem.CostForElectricity = ExcelUtils.GetExcelField<decimal>(row, "CostForElectricity");	// 6340 
+                    accountingItem.CostForToolsInventory = ExcelUtils.GetExcelField<decimal>(row, "CostForToolsInventory");	// 6500
+                    accountingItem.CostForMaintenance = ExcelUtils.GetExcelField<decimal>(row, "CostForMaintenance");	// 6695
+                    accountingItem.CostForFacilities = ExcelUtils.GetExcelField<decimal>(row, "CostForFacilities");	// 6800 
+
+                    accountingItem.CostOfData = ExcelUtils.GetExcelField<decimal>(row, "CostOfData");	// 6810 
+                    accountingItem.CostOfPhoneInternet = ExcelUtils.GetExcelField<decimal>(row, "CostOfPhoneInternet");	// 6900
+                    accountingItem.CostForTravelAndAllowance = ExcelUtils.GetExcelField<decimal>(row, "CostForTravelAndAllowance");	// 7140
+                    accountingItem.CostOfAdvertising = ExcelUtils.GetExcelField<decimal>(row, "CostOfAdvertising");	// 7330
+                    accountingItem.CostOfOther = ExcelUtils.GetExcelField<decimal>(row, "CostOfOther");	// 7700
+
+                    accountingItem.FeesBank = ExcelUtils.GetExcelField<decimal>(row, "FeesBank");	// 7770
+                    accountingItem.FeesPaypal = ExcelUtils.GetExcelField<decimal>(row, "FeesPaypal");	// 7780
+                    accountingItem.FeesStripe = ExcelUtils.GetExcelField<decimal>(row, "FeesStripe");	// 7785 
+
+                    accountingItem.CostForEstablishment = ExcelUtils.GetExcelField<decimal>(row, "CostForEstablishment");	// 7790
+
+                    accountingItem.IncomeFinance = ExcelUtils.GetExcelField<decimal>(row, "IncomeFinance");	// 8099
+                    accountingItem.CostOfFinance = ExcelUtils.GetExcelField<decimal>(row, "CostOfFinance");	// 8199
+
+                    accountingItem.Investments = ExcelUtils.GetExcelField<decimal>(row, "Investments");	// 1200
+                    accountingItem.AccountsReceivable = ExcelUtils.GetExcelField<decimal>(row, "AccountsReceivable");	// 1500
+                    accountingItem.PersonalWithdrawal = ExcelUtils.GetExcelField<decimal>(row, "PersonalWithdrawal");
+                    accountingItem.PersonalDeposit = ExcelUtils.GetExcelField<decimal>(row, "PersonalDeposit");
+
+                    oldAccountingSpreadsheet.Add(accountingItem);
+                }
+
+                // turn off totals row before adding more rows
+                table.ShowTotalsRow = false;
+
+                // add more rows
+                var firstNotSecond = newAccountingItems.Except(oldAccountingSpreadsheet).ToList();
+                var secondNotFirst = oldAccountingSpreadsheet.Except(newAccountingItems).ToList();
+                var newRows = table.InsertRowsBelow(firstNotSecond.Count(), true);
+
+                var counter = 0;
+                foreach (var newRow in newRows)
+                {
+                    newRow.Cell(1).Value = "";
+                    newRow.Cell(2).Value = firstNotSecond[counter].Periode;
+                    newRow.Cell(3).Value = firstNotSecond[counter].Date;
+                    newRow.Cell(4).Value = firstNotSecond[counter].Number;
+                    newRow.Cell(5).Value = firstNotSecond[counter].ArchiveReference;
+                    newRow.Cell(6).Value = firstNotSecond[counter].Type;
+                    newRow.Cell(7).Value = firstNotSecond[counter].AccountingType;
+                    newRow.Cell(8).Value = firstNotSecond[counter].Text;
+                    newRow.Cell(9).Value = firstNotSecond[counter].CustomerName;
+                    newRow.Cell(10).Value = firstNotSecond[counter].ErrorMessage;
+                    newRow.Cell(11).Value = firstNotSecond[counter].Gateway;
+                    newRow.Cell(12).Value = firstNotSecond[counter].NumSale;
+                    newRow.Cell(13).Value = firstNotSecond[counter].NumPurchase;
+                    newRow.Cell(14).Value = firstNotSecond[counter].PurchaseOtherCurrency;
+                    newRow.Cell(15).Value = firstNotSecond[counter].OtherCurrency;
+
+                    newRow.Cell(16).Value = firstNotSecond[counter].AccountPaypal;               // 1910
+                    newRow.Cell(17).Value = firstNotSecond[counter].AccountStripe;               // 1915
+                    newRow.Cell(18).Value = firstNotSecond[counter].AccountVipps;                // 1918
+                    newRow.Cell(19).Value = firstNotSecond[counter].AccountBank;                 // 1920
+
+                    newRow.Cell(20).Value = firstNotSecond[counter].VATPurchase;
+                    newRow.Cell(21).Value = firstNotSecond[counter].VATSales;
+
+                    newRow.Cell(22).Value = firstNotSecond[counter].SalesVAT;                    // 3000
+                    newRow.Cell(23).Value = firstNotSecond[counter].SalesVATExempt;              // 3100
+
+                    newRow.Cell(24).Value = firstNotSecond[counter].CostOfGoods;                 // 4005
+                    newRow.Cell(25).Value = firstNotSecond[counter].CostForReselling;            // 4300
+                    newRow.Cell(26).Value = firstNotSecond[counter].CostForSalary;               // 5000
+                    newRow.Cell(27).Value = firstNotSecond[counter].CostForSalaryTax;            // 5400
+                    newRow.Cell(28).Value = firstNotSecond[counter].CostForDepreciation;         // 6000
+                    newRow.Cell(29).Value = firstNotSecond[counter].CostForShipping;             // 6100
+                    newRow.Cell(30).Value = firstNotSecond[counter].CostForElectricity;          // 6340 
+                    newRow.Cell(31).Value = firstNotSecond[counter].CostForToolsInventory;       // 6500
+                    newRow.Cell(32).Value = firstNotSecond[counter].CostForMaintenance;          // 6695
+                    newRow.Cell(33).Value = firstNotSecond[counter].CostForFacilities;           // 6800 
+
+                    newRow.Cell(34).Value = firstNotSecond[counter].CostOfData;                  // 6810 
+                    newRow.Cell(35).Value = firstNotSecond[counter].CostOfPhoneInternet;         // 6900
+                    newRow.Cell(36).Value = firstNotSecond[counter].CostForTravelAndAllowance;   // 7140
+                    newRow.Cell(37).Value = firstNotSecond[counter].CostOfAdvertising;           // 7330
+                    newRow.Cell(38).Value = firstNotSecond[counter].CostOfOther;                 // 7700
+
+                    newRow.Cell(39).Value = firstNotSecond[counter].FeesBank;                    // 7770
+                    newRow.Cell(40).Value = firstNotSecond[counter].FeesPaypal;                  // 7780
+                    newRow.Cell(41).Value = firstNotSecond[counter].FeesStripe;                  // 7785 
+
+                    newRow.Cell(42).Value = firstNotSecond[counter].CostForEstablishment;        // 7790
+
+                    newRow.Cell(43).Value = firstNotSecond[counter].IncomeFinance;               // 8099
+                    newRow.Cell(44).Value = firstNotSecond[counter].CostOfFinance;               // 8199
+
+                    newRow.Cell(45).Value = firstNotSecond[counter].Investments;                 // 1200
+                    newRow.Cell(46).Value = firstNotSecond[counter].AccountsReceivable;          // 1500
+                    newRow.Cell(47).Value = firstNotSecond[counter].PersonalWithdrawal;
+                    newRow.Cell(48).Value = firstNotSecond[counter].PersonalDeposit;
+
+                    SetExcelRowFormulas(newRow);
+                    SetExcelRowStyles(newRow);
+
+                    counter++;
+                }
+
+                // turn on table total rows and set the functions for each of the relevant columns
+                SetExcelTableTotalsRowFunction(table);
+            }
+
+            // resize
+            ws.Columns().AdjustToContents();  // Adjust column width
+            ws.Rows().AdjustToContents();     // Adjust row heights
+
+            wb.SaveAs(@"test.xlsx");
+        }
+
+        static void SetExcelRowFormulas(IXLRangeRow row)
         {
             int currentRow = row.RowNumber();
 
@@ -427,7 +402,47 @@ namespace AccountingRobot
             }
         }
 
-        static void SetTableTotalsRowFunction(IXLTable table)
+        static void SetExcelRowStyles(IXLRangeRow row)
+        {
+            int currentRow = row.RowNumber();
+
+            // set font color for control column
+            row.Cell("A").Style.Font.FontColor = XLColor.Red;
+            row.Cell("A").Style.Font.Bold = true;
+
+            // set background color for VAT
+            var lightGreen = XLColor.FromArgb(0xD8E4BC);
+            var lighterGreen = XLColor.FromArgb(0xEBF1DE);
+            var green = currentRow % 2 == 0 ? lightGreen : lighterGreen;
+            row.Cells("T","U").Style.Fill.BackgroundColor = green;
+
+            // set background color for investments, withdrawal and deposits
+            var lightBlue = XLColor.FromArgb(0xC5D9F1);
+            var lighterBlue = XLColor.FromArgb(0xEAF1FA); 
+             var blue = currentRow % 2 == 0 ? lightBlue : lighterBlue;
+            row.Cells("AS","AV").Style.Fill.BackgroundColor = blue;
+
+            // set background color for control sum
+            var lightRed = XLColor.FromArgb(0xE6B8B7);
+            var lighterRed = XLColor.FromArgb(0xF2DCDB);
+            var red = currentRow % 2 == 0 ? lightRed : lighterRed;
+            row.Cell("AX").Style.Fill.BackgroundColor = red;
+
+            // set column formats
+            row.Cell("C").Style.NumberFormat.Format = "dd.MM.yyyy";
+            row.Cell("E").Style.NumberFormat.Format = "####################";
+
+            // Custom formats for numbers in Excel are entered in this format:
+            // positive number format;negative number format;zero format;text format
+            row.Cell("N").Style.NumberFormat.Format = "#,##0.00;[Red]-#,##0.00;";
+            row.Cell("N").DataType = XLCellValues.Number;
+
+            // set style and format for the decimal range
+            row.Cells("P","AX").Style.NumberFormat.Format = "#,##0.00;[Red]-#,##0.00;";
+            row.Cells("P","AX").DataType = XLCellValues.Number;
+        }
+
+        static void SetExcelTableTotalsRowFunction(IXLTable table)
         {
             table.ShowTotalsRow = true;
 
@@ -475,6 +490,7 @@ namespace AccountingRobot
             table.Field("PersonalDeposit").TotalsRowFunction = XLTotalsRowFunction.Sum;
 
         }
+        #endregion
 
         static List<AccountingItem> ProcessBankAccountStatement(string skandiabankenXLSX, List<string> customerNames)
         {
@@ -813,6 +829,7 @@ namespace AccountingRobot
             return accountingList;
         }
 
+        #region AliExpress Methods
         static void FindAliExpressOrderNumber(HashSet<string> usedOrderNumbers, List<AliExpressOrderGroup> aliExpressOrderGroups, List<OberloOrder> oberloOrders, SkandiabankenTransaction skandiabankenTransaction, AccountingItem accountingItem)
         {
             // set start and stop date
@@ -905,5 +922,6 @@ namespace AccountingRobot
                 accountingItem.NumPurchase = "NOT FOUND";
             }
         }
+        #endregion
     }
 }

@@ -136,8 +136,8 @@ namespace OberloScraper
             var ready = wait.Until(d => ((IJavaScriptExecutor)d).ExecuteScript("return document.readyState").Equals("complete"));
 
             // login if login form is present
-            if (IsElementPresent(driver, By.XPath("//input[@name='email']"))
-                && IsElementPresent(driver, By.XPath("//input[@name='password']")))
+            if (SeleniumUtils.IsElementPresent(driver, By.XPath("//input[@name='email']"))
+                && SeleniumUtils.IsElementPresent(driver, By.XPath("//input[@name='password']")))
             {
                 IWebElement username = driver.FindElement(By.XPath("//input[@name='email']"));
                 IWebElement password = driver.FindElement(By.XPath("//input[@name='password']"));
@@ -357,19 +357,6 @@ namespace OberloScraper
 
                     oberloOrders.Add(oberloOrder);
                 }
-            }
-        }
-
-        static bool IsElementPresent(IWebDriver driver, By by)
-        {
-            try
-            {
-                driver.FindElement(by);
-                return true;
-            }
-            catch (NoSuchElementException)
-            {
-                return false;
             }
         }
     }

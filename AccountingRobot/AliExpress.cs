@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using AccountingRobot;
+using OpenQA.Selenium.PhantomJS;
 
 namespace AliOrderScraper
 {
@@ -20,6 +21,9 @@ namespace AliOrderScraper
         {
             string userDataDir = ConfigurationManager.AppSettings["UserDataDir"];
             string cacheDir = ConfigurationManager.AppSettings["CacheDir"];
+            string aliExpressUsername = ConfigurationManager.AppSettings["AliExpressUsername"];
+            string aliExpressPassword = ConfigurationManager.AppSettings["AliExpressPassword"];
+
             string cacheFileNamePrefix = "AliExpress Orders";
 
             var lastCacheFile = Utils.FindLastCacheFile(cacheDir, cacheFileNamePrefix);
@@ -42,14 +46,14 @@ namespace AliOrderScraper
                 if (from.Equals(to))
                 {
                     // use latest cache file (or force an update)
-                    return GetAliExpressOrders(lastCacheFile.Value, userDataDir, from, forceUpdate);
+                    return GetAliExpressOrders(lastCacheFile.Value, userDataDir, aliExpressUsername, aliExpressPassword, from, forceUpdate);
                 }
                 else if (from != firstDayOfTheYear)
                 {
                     // we have to combine two files:
                     // the original cache file and the new transactions file
                     Console.Out.WriteLine("Finding AliExpress Orders from {0:yyyy-MM-dd} to {1:yyyy-MM-dd}", from, to);
-                    var newAliExpressOrders = ScrapeAliExpressOrders(userDataDir, from);
+                    var newAliExpressOrders = ScrapeAliExpressOrders(userDataDir, aliExpressUsername, aliExpressPassword, from);
                     var originalAliExpressOrders = Utils.ReadCacheFile<AliExpressOrder>(lastCacheFile.Value);
 
                     // copy all the original AliExpress orders into a new file, except entries that are 
@@ -84,10 +88,10 @@ namespace AliOrderScraper
 
             // get updated transactions (or from cache file if update is forced)
             string cacheFilePath = Path.Combine(cacheDir, string.Format("{0}-{1:yyyy-MM-dd}-{2:yyyy-MM-dd}.csv", cacheFileNamePrefix, from, to));
-            return GetAliExpressOrders(cacheFilePath, userDataDir, from);
+            return GetAliExpressOrders(cacheFilePath, userDataDir, aliExpressUsername, aliExpressPassword, from);
         }
 
-        public static List<AliExpressOrder> GetAliExpressOrders(string cacheFilePath, string userDataDir, DateTime from, bool forceUpdate = false)
+        public static List<AliExpressOrder> GetAliExpressOrders(string cacheFilePath, string userDataDir, string aliExpressUsername, string aliExpressPassword, DateTime from, bool forceUpdate = false)
         {
             var cachedAliExpressOrders = Utils.ReadCacheFile<AliExpressOrder>(cacheFilePath, forceUpdate);
             if (cachedAliExpressOrders != null && cachedAliExpressOrders.Count() > 0)
@@ -97,7 +101,7 @@ namespace AliOrderScraper
             }
             else
             {
-                var AliExpressOrders = ScrapeAliExpressOrders(userDataDir, from);
+                var AliExpressOrders = ScrapeAliExpressOrders(userDataDir, aliExpressUsername, aliExpressPassword, from);
 
                 using (var sw = new StreamWriter(cacheFilePath))
                 {
@@ -114,7 +118,7 @@ namespace AliOrderScraper
             }
         }
 
-        static List<AliExpressOrder> ScrapeAliExpressOrders(string userDataDir, DateTime from)
+        static List<AliExpressOrder> ScrapeAliExpressOrders(string userDataDir, string aliExpressUsername, string aliExpressPassword, DateTime from)
         {
             var aliExpressOrders = new List<AliExpressOrder>();
 
@@ -128,12 +132,48 @@ namespace AliOrderScraper
             //options.AddArguments("--ignore-certificate-errors");
             //options.AddArguments("--ignore-ssl-errors");
             IWebDriver driver = new ChromeDriver(options);
+
             driver.Navigate().GoToUrl("https://login.aliexpress.com");
+
+            var waitLoginPage = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
+            waitLoginPage.Until(d => ((IJavaScriptExecutor)d).ExecuteScript("return document.readyState").Equals("complete"));
+
+            // login if login form is present
+            // https://philipcaande.wordpress.com/2016/01/17/iframe-in-selenium-c/
+            if (SeleniumUtils.IsElementPresent(driver, By.Id("alibaba-login-box")))
+            {
+                // switch to login iframe
+                IWebElement iframe = driver.FindElement(By.Id("alibaba-login-box"));
+                driver.SwitchTo().Frame(iframe);
+
+                // login if login form is present
+                if (SeleniumUtils.IsElementPresent(driver, By.XPath("//input[@id='fm-login-id']"))
+                    && SeleniumUtils.IsElementPresent(driver, By.XPath("//input[@id='fm-login-password']")))
+                {
+                    IWebElement username = driver.FindElement(By.XPath("//input[@id='fm-login-id']"));
+                    IWebElement password = driver.FindElement(By.XPath("//input[@id='fm-login-password']"));
+
+                    username.Clear();
+                    username.SendKeys(aliExpressUsername);
+
+                    password.Clear();
+                    password.SendKeys(aliExpressPassword);
+
+                    // use password field to submit form
+                    password.Submit();
+
+                    var waitLoginIFrame = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
+                    waitLoginIFrame.Until(d => ((IJavaScriptExecutor)d).ExecuteScript("return document.readyState").Equals("complete"));
+                }
+
+                // switch back to main frame
+                driver.SwitchTo().DefaultContent();
+            }
 
             try
             {
-                var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
-                wait.Until(ExpectedConditions.UrlToBe("https://www.aliexpress.com/"));
+                var waitMainPage = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
+                waitMainPage.Until(ExpectedConditions.UrlToBe("https://www.aliexpress.com/"));
             }
             catch (WebDriverTimeoutException)
             {
@@ -160,6 +200,7 @@ namespace AliOrderScraper
                 }
             }
 
+            driver.Close();
             return aliExpressOrders;
         }
 
