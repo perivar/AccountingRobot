@@ -6,6 +6,7 @@ using AliOrderScraper;
 using OberloScraper;
 using ClosedXML.Excel;
 using System.Data;
+using System.IO;
 
 namespace AccountingRobot
 {
@@ -36,8 +37,6 @@ namespace AccountingRobot
             {
                 Console.Out.WriteLine("Error! No SBanken transaction file found!.");
                 return;
-                //string skandiabankenXLSX = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\97132735232_2017_01_01-2017_12_20.xlsx";
-                //accountingBankItems = ProcessBankAccountStatement(skandiabankenXLSX);
             }
 
             // merge into one list
@@ -46,13 +45,33 @@ namespace AccountingRobot
             // and sort (by ascending)
             var accountingItems = accountingShopifyItems.OrderBy(o => o.Date).ToList();
 
-            // export to excel file
-            //var now = DateTime.Now;
-            //var fileName = string.Format("Accounting {0:yyyy-MM-dd}.xlsx", now);
-            //ExportToExcel(fileName, accountingItems);
+            // export or update accounting spreadsheet
+            string accountingFileDir = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap";
+            string accountingFileNamePrefix = "wazalo regnskap";
+            string accountingDateFromToRegexPattern = @"(\d{4}\-\d{2}\-\d{2})\-(\d{4}\-\d{2}\-\d{2})\.xlsx$";
+            var lastAccountingFile = Utils.FindLastCacheFile(accountingFileDir, accountingFileNamePrefix, accountingDateFromToRegexPattern, "yyyy-MM-dd", "\\-");
 
-            var fileName = @"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\Accounting 2017-12-24.xlsx";
-            UpdateExcelFile(fileName, accountingItems);
+            // if the cache file object has values
+            if (!lastAccountingFile.Equals(default(KeyValuePair<DateTime, string>)))
+            {
+                Console.Out.WriteLine("Found an accounting spreadsheet from {0:yyyy-MM-dd}", lastAccountingFile.Key);
+                UpdateExcelFile(lastAccountingFile.Value, accountingItems);
+            }
+            else
+            {
+                Console.Out.WriteLine("No existing accounting spreadsheets found - creating ...");
+
+                // export to excel file
+                var currentDate = DateTime.Now.Date;
+                var currentYear = currentDate.Year;
+                var from = new DateTime(currentYear, 1, 1);
+                var to = currentDate;
+
+                string accountingFileName = string.Format("{0}-{1:yyyy-MM-dd}-{2:yyyy-MM-dd}.xlsx", accountingFileNamePrefix, from, to);
+                string filePath = Path.Combine(accountingFileDir, accountingFileName);
+
+                ExportToExcel(filePath, accountingItems);
+            }
 
             Console.ReadLine();
         }
@@ -60,137 +79,47 @@ namespace AccountingRobot
         #region Excel Methods
         static void ExportToExcel(string filePath, List<AccountingItem> accountingItems)
         {
-            DataTable dt = new DataTable();
-            dt.Columns.Add("Kontroll", typeof(String));
-
-            dt.Columns.Add("Periode", typeof(int));
-            dt.Columns.Add("Dato", typeof(DateTime));
-            dt.Columns.Add("Bilagsnr.", typeof(int));
-            dt.Columns.Add("Arkivreferanse", typeof(long));
-            dt.Columns.Add("Type", typeof(string));
-            dt.Columns.Add("Regnskapstype", typeof(string));
-            dt.Columns.Add("Tekst", typeof(string));
-            dt.Columns.Add("Kundenavn", typeof(string));
-            dt.Columns.Add("Feilmelding", typeof(string));
-            dt.Columns.Add("Gateway", typeof(string));
-            dt.Columns.Add("Num Salg", typeof(string));
-            dt.Columns.Add("Num Kjøp", typeof(string));
-            dt.Columns.Add("Kjøp annen valuta", typeof(decimal));
-            dt.Columns.Add("Annen valuta", typeof(string));
-
-            dt.Columns.Add("Paypal", typeof(decimal));           // 1910
-            dt.Columns.Add("Stripe", typeof(decimal));           // 1915
-            dt.Columns.Add("Vipps", typeof(decimal));            // 1918
-            dt.Columns.Add("Bank", typeof(decimal));             // 1920
-
-            dt.Columns.Add("MVA Kjøp", typeof(decimal));
-            dt.Columns.Add("MVA Salg", typeof(decimal));
-
-            dt.Columns.Add("Salg mva-pliktig", typeof(decimal));                // 3000
-            dt.Columns.Add("Salg avgiftsfritt", typeof(decimal));          // 3100
-
-            dt.Columns.Add("Varekostnad", typeof(decimal));             // 4005
-            dt.Columns.Add("Forbruk for videresalg", typeof(decimal));        // 4300
-            dt.Columns.Add("Lønn", typeof(decimal));           // 5000
-            dt.Columns.Add("Arb.giver avgift", typeof(decimal));        // 5400
-            dt.Columns.Add("Avskrivninger", typeof(decimal));     // 6000
-            dt.Columns.Add("Frakt", typeof(decimal));         // 6100
-            dt.Columns.Add("Strøm", typeof(decimal));      // 6340 
-            dt.Columns.Add("Verktøy inventar", typeof(decimal));   // 6500
-            dt.Columns.Add("Vedlikehold", typeof(decimal));      // 6695
-            dt.Columns.Add("Kontorkostnader", typeof(decimal));       // 6800 
-
-            dt.Columns.Add("Datakostnader", typeof(decimal));              // 6810 
-            dt.Columns.Add("Telefon Internett", typeof(decimal));     // 6900
-            dt.Columns.Add("Reise og Diett", typeof(decimal));// 7140
-            dt.Columns.Add("Reklamekostnader", typeof(decimal));       // 7330
-            dt.Columns.Add("Diverse annet", typeof(decimal));             // 7700
-
-            dt.Columns.Add("Gebyrer Bank", typeof(decimal));                // 7770
-            dt.Columns.Add("Gebyrer Paypal", typeof(decimal));              // 7780
-            dt.Columns.Add("Gebyrer Stripe", typeof(decimal));              // 7785 
-
-            dt.Columns.Add("Etableringskostnader", typeof(decimal));    // 7790
-
-            dt.Columns.Add("Finansinntekter", typeof(decimal));           // 8099
-            dt.Columns.Add("Finanskostnader", typeof(decimal));           // 8199
-
-            dt.Columns.Add("Investeringer", typeof(decimal));             // 1200
-            dt.Columns.Add("Kundefordringer", typeof(decimal));      // 1500
-            dt.Columns.Add("Privat uttak", typeof(decimal));
-            dt.Columns.Add("Privat innskudd", typeof(decimal));
-
-            dt.Columns.Add("Sum før avrunding", typeof(decimal));
-            dt.Columns.Add("Sum", typeof(decimal));
-
-            foreach (var accountingItem in accountingItems)
-            {
-                dt.Rows.Add(
-                    "",
-                    accountingItem.Periode,
-                    accountingItem.Date,
-                    accountingItem.Number,
-                    accountingItem.ArchiveReference,
-                    accountingItem.Type,
-                    accountingItem.AccountingType,
-                    accountingItem.Text,
-                    accountingItem.CustomerName,
-                    accountingItem.ErrorMessage,
-                    accountingItem.Gateway,
-                    accountingItem.NumSale,
-                    accountingItem.NumPurchase,
-                    accountingItem.PurchaseOtherCurrency,
-                    accountingItem.OtherCurrency,
-
-                    accountingItem.AccountPaypal,               // 1910
-                    accountingItem.AccountStripe,               // 1915
-                    accountingItem.AccountVipps,                // 1918
-                    accountingItem.AccountBank,                 // 1920
-
-                    accountingItem.VATPurchase,
-                    accountingItem.VATSales,
-
-                    accountingItem.SalesVAT,                    // 3000
-                    accountingItem.SalesVATExempt,              // 3100
-
-                    accountingItem.CostOfGoods,                 // 4005
-                    accountingItem.CostForReselling,            // 4300
-                    accountingItem.CostForSalary,               // 5000
-                    accountingItem.CostForSalaryTax,            // 5400
-                    accountingItem.CostForDepreciation,         // 6000
-                    accountingItem.CostForShipping,             // 6100
-                    accountingItem.CostForElectricity,          // 6340 
-                    accountingItem.CostForToolsInventory,       // 6500
-                    accountingItem.CostForMaintenance,          // 6695
-                    accountingItem.CostForFacilities,           // 6800 
-
-                    accountingItem.CostOfData,                  // 6810 
-                    accountingItem.CostOfPhoneInternet,         // 6900
-                    accountingItem.CostForTravelAndAllowance,   // 7140
-                    accountingItem.CostOfAdvertising,           // 7330
-                    accountingItem.CostOfOther,                 // 7700
-
-                    accountingItem.FeesBank,                    // 7770
-                    accountingItem.FeesPaypal,                  // 7780
-                    accountingItem.FeesStripe,                  // 7785 
-
-                    accountingItem.CostForEstablishment,        // 7790
-
-                    accountingItem.IncomeFinance,               // 8099
-                    accountingItem.CostOfFinance,               // 8199
-
-                    accountingItem.Investments,                 // 1200
-                    accountingItem.AccountsReceivable,          // 1500
-                    accountingItem.PersonalWithdrawal,
-                    accountingItem.PersonalDeposit
-                    );
-            }
+            var dt = GetDataTable(accountingItems);
 
             // Build Excel spreadsheet using Closed XML
             using (XLWorkbook wb = new XLWorkbook())
             {
-                var ws = wb.Worksheets.Add(dt, "Bilagsjournal");
-                var table = ws.Tables.First();
+                var ws = wb.Worksheets.Add("Bilagsjournal");
+
+                // add accounting headers
+                ws.Cell(1, 16).Value = "1910";
+                ws.Cell(1, 17).Value = "1912";
+                ws.Cell(1, 18).Value = "1914";
+                ws.Cell(1, 19).Value = "1920";
+                ws.Cell(1, 22).Value = "3000";
+                ws.Cell(1, 23).Value = "3100";
+                ws.Cell(1, 24).Value = "4005";
+                ws.Cell(1, 25).Value = "4300";
+                ws.Cell(1, 26).Value = "5000";
+                ws.Cell(1, 27).Value = "5400";
+                ws.Cell(1, 28).Value = "6000";
+                ws.Cell(1, 29).Value = "6100";
+                ws.Cell(1, 30).Value = "6340";
+                ws.Cell(1, 31).Value = "6500";
+                ws.Cell(1, 32).Value = "6695";
+                ws.Cell(1, 33).Value = "6800";
+                ws.Cell(1, 34).Value = "6810";
+                ws.Cell(1, 35).Value = "6900";
+                ws.Cell(1, 36).Value = "7140";
+                ws.Cell(1, 37).Value = "7330";
+                ws.Cell(1, 38).Value = "7700";
+                ws.Cell(1, 39).Value = "7770";
+                ws.Cell(1, 40).Value = "7780";
+                ws.Cell(1, 41).Value = "7785";
+                ws.Cell(1, 42).Value = "7790";            
+                ws.Cell(1, 43).Value = "8099";
+                ws.Cell(1, 44).Value = "8199";
+                ws.Cell(1, 45).Value = "1200";
+                ws.Cell(1, 46).Value = "1500";
+
+                // insert datatable in row 2
+                var table = ws.Cell(2, 1).InsertTable(dt);
+
                 table.Theme = XLTableTheme.TableStyleLight16;
 
                 // turn on table total rows and set the functions for each of the relevant columns
@@ -210,6 +139,7 @@ namespace AccountingRobot
                 ws.Rows().AdjustToContents();     // Adjust row heights
 
                 wb.SaveAs(filePath);
+                Console.Out.WriteLine("Successfully wrote accounting file to {0}", filePath);
             }
         }
 
@@ -302,91 +232,112 @@ namespace AccountingRobot
                 var newAccountingElements = newAccountingItems.Except(existingAccountingItemsToKeep.Select(o => o.Value)).ToList();
 
                 // delete rows from table
-                foreach (var deleteRow in existingAccountingItemsToDelete) {
+                int deleteRowCounter = 0;
+                int deleteRowTotalCount = existingAccountingItemsToDelete.Count();
+                Console.Out.WriteLine("Deleting {0} rows", deleteRowTotalCount);
+                foreach (var deleteRow in existingAccountingItemsToDelete)
+                {
+                    deleteRowCounter++;
+                    Console.Out.Write("\rDeleting row {0}/{1} ({2})", deleteRowCounter, deleteRowTotalCount, deleteRow.Key.RangeAddress);
                     deleteRow.Key.Delete(XLShiftDeletedCells.ShiftCellsUp);
                 }
 
-                // insert new rows below the existing table
-                // turn off totals row before adding more rows
-                table.ShowTotalsRow = false;
-                var newRows = table.InsertRowsBelow(newAccountingElements.Count(), true);
-
-                var counter = 0;
-                foreach (var newRow in newRows)
+                // how many new rows needs to be added
+                int newRowTotalCount = newAccountingElements.Count();
+                Console.Out.WriteLine("Appending {0} rows", newRowTotalCount);
+                if (newRowTotalCount > 0)
                 {
-                    newRow.Cell(1).Value = "";
-                    newRow.Cell(2).Value = newAccountingElements[counter].Periode;
-                    newRow.Cell(3).Value = newAccountingElements[counter].Date;
-                    newRow.Cell(4).Value = newAccountingElements[counter].Number;
-                    newRow.Cell(5).Value = newAccountingElements[counter].ArchiveReference;
-                    newRow.Cell(6).Value = newAccountingElements[counter].Type;
-                    newRow.Cell(7).Value = newAccountingElements[counter].AccountingType;
-                    newRow.Cell(8).Value = newAccountingElements[counter].Text;
-                    newRow.Cell(9).Value = newAccountingElements[counter].CustomerName;
-                    newRow.Cell(10).Value = newAccountingElements[counter].ErrorMessage;
-                    newRow.Cell(11).Value = newAccountingElements[counter].Gateway;
-                    newRow.Cell(12).Value = newAccountingElements[counter].NumSale;
-                    newRow.Cell(13).Value = newAccountingElements[counter].NumPurchase;
-                    newRow.Cell(14).Value = newAccountingElements[counter].PurchaseOtherCurrency;
-                    newRow.Cell(15).Value = newAccountingElements[counter].OtherCurrency;
+                    // turn off totals row before adding more rows
+                    table.ShowTotalsRow = false;
 
-                    newRow.Cell(16).Value = newAccountingElements[counter].AccountPaypal;               // 1910
-                    newRow.Cell(17).Value = newAccountingElements[counter].AccountStripe;               // 1915
-                    newRow.Cell(18).Value = newAccountingElements[counter].AccountVipps;                // 1918
-                    newRow.Cell(19).Value = newAccountingElements[counter].AccountBank;                 // 1920
+                    // insert new rows below the existing table
+                    var newRows = table.InsertRowsBelow(newRowTotalCount, true);
 
-                    newRow.Cell(20).Value = newAccountingElements[counter].VATPurchase;
-                    newRow.Cell(21).Value = newAccountingElements[counter].VATSales;
+                    // insert values in the new rows
+                    var newRowCounter = 0;
+                    foreach (var newRow in newRows)
+                    {
+                        newRow.Cell(1).Value = "";
+                        newRow.Cell(2).Value = newAccountingElements[newRowCounter].Periode;
+                        newRow.Cell(3).Value = newAccountingElements[newRowCounter].Date;
+                        newRow.Cell(4).Value = newAccountingElements[newRowCounter].Number;
+                        newRow.Cell(5).Value = newAccountingElements[newRowCounter].ArchiveReference;
+                        newRow.Cell(6).Value = newAccountingElements[newRowCounter].Type;
+                        newRow.Cell(7).Value = newAccountingElements[newRowCounter].AccountingType;
+                        newRow.Cell(8).Value = newAccountingElements[newRowCounter].Text;
+                        newRow.Cell(9).Value = newAccountingElements[newRowCounter].CustomerName;
+                        newRow.Cell(10).Value = newAccountingElements[newRowCounter].ErrorMessage;
+                        newRow.Cell(11).Value = newAccountingElements[newRowCounter].Gateway;
+                        newRow.Cell(12).Value = newAccountingElements[newRowCounter].NumSale;
+                        newRow.Cell(13).Value = newAccountingElements[newRowCounter].NumPurchase;
+                        newRow.Cell(14).Value = newAccountingElements[newRowCounter].PurchaseOtherCurrency;
+                        newRow.Cell(15).Value = newAccountingElements[newRowCounter].OtherCurrency;
 
-                    newRow.Cell(22).Value = newAccountingElements[counter].SalesVAT;                    // 3000
-                    newRow.Cell(23).Value = newAccountingElements[counter].SalesVATExempt;              // 3100
+                        newRow.Cell(16).Value = newAccountingElements[newRowCounter].AccountPaypal;               // 1910
+                        newRow.Cell(17).Value = newAccountingElements[newRowCounter].AccountStripe;               // 1912
+                        newRow.Cell(18).Value = newAccountingElements[newRowCounter].AccountVipps;                // 1914
+                        newRow.Cell(19).Value = newAccountingElements[newRowCounter].AccountBank;                 // 1920
 
-                    newRow.Cell(24).Value = newAccountingElements[counter].CostOfGoods;                 // 4005
-                    newRow.Cell(25).Value = newAccountingElements[counter].CostForReselling;            // 4300
-                    newRow.Cell(26).Value = newAccountingElements[counter].CostForSalary;               // 5000
-                    newRow.Cell(27).Value = newAccountingElements[counter].CostForSalaryTax;            // 5400
-                    newRow.Cell(28).Value = newAccountingElements[counter].CostForDepreciation;         // 6000
-                    newRow.Cell(29).Value = newAccountingElements[counter].CostForShipping;             // 6100
-                    newRow.Cell(30).Value = newAccountingElements[counter].CostForElectricity;          // 6340 
-                    newRow.Cell(31).Value = newAccountingElements[counter].CostForToolsInventory;       // 6500
-                    newRow.Cell(32).Value = newAccountingElements[counter].CostForMaintenance;          // 6695
-                    newRow.Cell(33).Value = newAccountingElements[counter].CostForFacilities;           // 6800 
+                        newRow.Cell(20).Value = newAccountingElements[newRowCounter].VATPurchase;
+                        newRow.Cell(21).Value = newAccountingElements[newRowCounter].VATSales;
 
-                    newRow.Cell(34).Value = newAccountingElements[counter].CostOfData;                  // 6810 
-                    newRow.Cell(35).Value = newAccountingElements[counter].CostOfPhoneInternet;         // 6900
-                    newRow.Cell(36).Value = newAccountingElements[counter].CostForTravelAndAllowance;   // 7140
-                    newRow.Cell(37).Value = newAccountingElements[counter].CostOfAdvertising;           // 7330
-                    newRow.Cell(38).Value = newAccountingElements[counter].CostOfOther;                 // 7700
+                        newRow.Cell(22).Value = newAccountingElements[newRowCounter].SalesVAT;                    // 3000
+                        newRow.Cell(23).Value = newAccountingElements[newRowCounter].SalesVATExempt;              // 3100
 
-                    newRow.Cell(39).Value = newAccountingElements[counter].FeesBank;                    // 7770
-                    newRow.Cell(40).Value = newAccountingElements[counter].FeesPaypal;                  // 7780
-                    newRow.Cell(41).Value = newAccountingElements[counter].FeesStripe;                  // 7785 
+                        newRow.Cell(24).Value = newAccountingElements[newRowCounter].CostOfGoods;                 // 4005
+                        newRow.Cell(25).Value = newAccountingElements[newRowCounter].CostForReselling;            // 4300
+                        newRow.Cell(26).Value = newAccountingElements[newRowCounter].CostForSalary;               // 5000
+                        newRow.Cell(27).Value = newAccountingElements[newRowCounter].CostForSalaryTax;            // 5400
+                        newRow.Cell(28).Value = newAccountingElements[newRowCounter].CostForDepreciation;         // 6000
+                        newRow.Cell(29).Value = newAccountingElements[newRowCounter].CostForShipping;             // 6100
+                        newRow.Cell(30).Value = newAccountingElements[newRowCounter].CostForElectricity;          // 6340 
+                        newRow.Cell(31).Value = newAccountingElements[newRowCounter].CostForToolsInventory;       // 6500
+                        newRow.Cell(32).Value = newAccountingElements[newRowCounter].CostForMaintenance;          // 6695
+                        newRow.Cell(33).Value = newAccountingElements[newRowCounter].CostForFacilities;           // 6800 
 
-                    newRow.Cell(42).Value = newAccountingElements[counter].CostForEstablishment;        // 7790
+                        newRow.Cell(34).Value = newAccountingElements[newRowCounter].CostOfData;                  // 6810 
+                        newRow.Cell(35).Value = newAccountingElements[newRowCounter].CostOfPhoneInternet;         // 6900
+                        newRow.Cell(36).Value = newAccountingElements[newRowCounter].CostForTravelAndAllowance;   // 7140
+                        newRow.Cell(37).Value = newAccountingElements[newRowCounter].CostOfAdvertising;           // 7330
+                        newRow.Cell(38).Value = newAccountingElements[newRowCounter].CostOfOther;                 // 7700
 
-                    newRow.Cell(43).Value = newAccountingElements[counter].IncomeFinance;               // 8099
-                    newRow.Cell(44).Value = newAccountingElements[counter].CostOfFinance;               // 8199
+                        newRow.Cell(39).Value = newAccountingElements[newRowCounter].FeesBank;                    // 7770
+                        newRow.Cell(40).Value = newAccountingElements[newRowCounter].FeesPaypal;                  // 7780
+                        newRow.Cell(41).Value = newAccountingElements[newRowCounter].FeesStripe;                  // 7785 
 
-                    newRow.Cell(45).Value = newAccountingElements[counter].Investments;                 // 1200
-                    newRow.Cell(46).Value = newAccountingElements[counter].AccountsReceivable;          // 1500
-                    newRow.Cell(47).Value = newAccountingElements[counter].PersonalWithdrawal;
-                    newRow.Cell(48).Value = newAccountingElements[counter].PersonalDeposit;
+                        newRow.Cell(42).Value = newAccountingElements[newRowCounter].CostForEstablishment;        // 7790
 
-                    SetExcelRowFormulas(newRow);
-                    SetExcelRowStyles(newRow);
+                        newRow.Cell(43).Value = newAccountingElements[newRowCounter].IncomeFinance;               // 8099
+                        newRow.Cell(44).Value = newAccountingElements[newRowCounter].CostOfFinance;               // 8199
 
-                    counter++;
+                        newRow.Cell(45).Value = newAccountingElements[newRowCounter].Investments;                 // 1200
+                        newRow.Cell(46).Value = newAccountingElements[newRowCounter].AccountsReceivable;          // 1500
+                        newRow.Cell(47).Value = newAccountingElements[newRowCounter].PersonalWithdrawal;
+                        newRow.Cell(48).Value = newAccountingElements[newRowCounter].PersonalDeposit;
+
+                        SetExcelRowFormulas(newRow);
+                        SetExcelRowStyles(newRow);
+
+                        newRowCounter++;
+                    }
+
+                    // turn on table total rows and set the functions for each of the relevant columns
+                    SetExcelTableTotalsRowFunction(table);
                 }
-
-                // turn on table total rows and set the functions for each of the relevant columns
-                SetExcelTableTotalsRowFunction(table);
+                else
+                {
+                    Console.Out.WriteLine("Nothing to update! Quitting.");
+                    return;
+                }
             }
 
             // resize
             ws.Columns().AdjustToContents();  // Adjust column width
             ws.Rows().AdjustToContents();     // Adjust row heights
 
-            wb.SaveAs(@"test.xlsx");
+            //wb.SaveAs(@"test.xlsx");
+            wb.Save();
+            Console.Out.WriteLine("Successfully updated accounting file!");
         }
 
         static void SetExcelRowFormulas(IXLRangeRow row)
@@ -502,6 +453,137 @@ namespace AccountingRobot
             table.Field("Privat uttak").TotalsRowFunction = XLTotalsRowFunction.Sum;
             table.Field("Privat innskudd").TotalsRowFunction = XLTotalsRowFunction.Sum;
 
+        }
+
+        static DataTable GetDataTable(List<AccountingItem> accountingItems)
+        {
+            DataTable dt = new DataTable();
+            dt.Columns.Add("Kontroll", typeof(String));
+
+            dt.Columns.Add("Periode", typeof(int));
+            dt.Columns.Add("Dato", typeof(DateTime));
+            dt.Columns.Add("Bilagsnr.", typeof(int));
+            dt.Columns.Add("Arkivreferanse", typeof(long));
+            dt.Columns.Add("Type", typeof(string));
+            dt.Columns.Add("Regnskapstype", typeof(string));
+            dt.Columns.Add("Tekst", typeof(string));
+            dt.Columns.Add("Kundenavn", typeof(string));
+            dt.Columns.Add("Feilmelding", typeof(string));
+            dt.Columns.Add("Gateway", typeof(string));
+            dt.Columns.Add("Num Salg", typeof(string));
+            dt.Columns.Add("Num Kjøp", typeof(string));
+            dt.Columns.Add("Kjøp annen valuta", typeof(decimal));
+            dt.Columns.Add("Annen valuta", typeof(string));
+
+            dt.Columns.Add("Paypal", typeof(decimal));                          // 1910
+            dt.Columns.Add("Stripe", typeof(decimal));                          // 1912
+            dt.Columns.Add("Vipps", typeof(decimal));                           // 1914
+            dt.Columns.Add("Bank", typeof(decimal));                            // 1920
+
+            dt.Columns.Add("MVA Kjøp", typeof(decimal));
+            dt.Columns.Add("MVA Salg", typeof(decimal));
+
+            dt.Columns.Add("Salg mva-pliktig", typeof(decimal));                // 3000
+            dt.Columns.Add("Salg avgiftsfritt", typeof(decimal));               // 3100
+
+            dt.Columns.Add("Varekostnad", typeof(decimal));                     // 4005
+            dt.Columns.Add("Forbruk for videresalg", typeof(decimal));          // 4300
+            dt.Columns.Add("Lønn", typeof(decimal));                            // 5000
+            dt.Columns.Add("Arb.giver avgift", typeof(decimal));                // 5400
+            dt.Columns.Add("Avskrivninger", typeof(decimal));                   // 6000
+            dt.Columns.Add("Frakt", typeof(decimal));                           // 6100
+            dt.Columns.Add("Strøm", typeof(decimal));                           // 6340 
+            dt.Columns.Add("Verktøy inventar", typeof(decimal));                // 6500
+            dt.Columns.Add("Vedlikehold", typeof(decimal));                     // 6695
+            dt.Columns.Add("Kontorkostnader", typeof(decimal));                 // 6800 
+
+            dt.Columns.Add("Datakostnader", typeof(decimal));                   // 6810 
+            dt.Columns.Add("Telefon Internett", typeof(decimal));               // 6900
+            dt.Columns.Add("Reise og Diett", typeof(decimal));                  // 7140
+            dt.Columns.Add("Reklamekostnader", typeof(decimal));                // 7330
+            dt.Columns.Add("Diverse annet", typeof(decimal));                   // 7700
+
+            dt.Columns.Add("Gebyrer Bank", typeof(decimal));                    // 7770
+            dt.Columns.Add("Gebyrer Paypal", typeof(decimal));                  // 7780
+            dt.Columns.Add("Gebyrer Stripe", typeof(decimal));                  // 7785 
+
+            dt.Columns.Add("Etableringskostnader", typeof(decimal));            // 7790
+
+            dt.Columns.Add("Finansinntekter", typeof(decimal));                 // 8099
+            dt.Columns.Add("Finanskostnader", typeof(decimal));                 // 8199
+
+            dt.Columns.Add("Investeringer", typeof(decimal));                   // 1200
+            dt.Columns.Add("Kundefordringer", typeof(decimal));                 // 1500
+            dt.Columns.Add("Privat uttak", typeof(decimal));
+            dt.Columns.Add("Privat innskudd", typeof(decimal));
+
+            dt.Columns.Add("Sum før avrunding", typeof(decimal));
+            dt.Columns.Add("Sum", typeof(decimal));
+
+            foreach (var accountingItem in accountingItems)
+            {
+                dt.Rows.Add(
+                    "",
+                    accountingItem.Periode,
+                    accountingItem.Date,
+                    accountingItem.Number,
+                    accountingItem.ArchiveReference,
+                    accountingItem.Type,
+                    accountingItem.AccountingType,
+                    accountingItem.Text,
+                    accountingItem.CustomerName,
+                    accountingItem.ErrorMessage,
+                    accountingItem.Gateway,
+                    accountingItem.NumSale,
+                    accountingItem.NumPurchase,
+                    accountingItem.PurchaseOtherCurrency,
+                    accountingItem.OtherCurrency,
+
+                    accountingItem.AccountPaypal,               // 1910
+                    accountingItem.AccountStripe,               // 1915
+                    accountingItem.AccountVipps,                // 1918
+                    accountingItem.AccountBank,                 // 1920
+
+                    accountingItem.VATPurchase,
+                    accountingItem.VATSales,
+
+                    accountingItem.SalesVAT,                    // 3000
+                    accountingItem.SalesVATExempt,              // 3100
+
+                    accountingItem.CostOfGoods,                 // 4005
+                    accountingItem.CostForReselling,            // 4300
+                    accountingItem.CostForSalary,               // 5000
+                    accountingItem.CostForSalaryTax,            // 5400
+                    accountingItem.CostForDepreciation,         // 6000
+                    accountingItem.CostForShipping,             // 6100
+                    accountingItem.CostForElectricity,          // 6340 
+                    accountingItem.CostForToolsInventory,       // 6500
+                    accountingItem.CostForMaintenance,          // 6695
+                    accountingItem.CostForFacilities,           // 6800 
+
+                    accountingItem.CostOfData,                  // 6810 
+                    accountingItem.CostOfPhoneInternet,         // 6900
+                    accountingItem.CostForTravelAndAllowance,   // 7140
+                    accountingItem.CostOfAdvertising,           // 7330
+                    accountingItem.CostOfOther,                 // 7700
+
+                    accountingItem.FeesBank,                    // 7770
+                    accountingItem.FeesPaypal,                  // 7780
+                    accountingItem.FeesStripe,                  // 7785 
+
+                    accountingItem.CostForEstablishment,        // 7790
+
+                    accountingItem.IncomeFinance,               // 8099
+                    accountingItem.CostOfFinance,               // 8199
+
+                    accountingItem.Investments,                 // 1200
+                    accountingItem.AccountsReceivable,          // 1500
+                    accountingItem.PersonalWithdrawal,
+                    accountingItem.PersonalDeposit
+                    );
+            }
+
+            return dt;
         }
         #endregion
 

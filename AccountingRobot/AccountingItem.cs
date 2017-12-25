@@ -25,8 +25,8 @@ namespace AccountingRobot
         public string OtherCurrency { get; set; }
 
         public decimal AccountPaypal { get; set; }              // 1910
-        public decimal AccountStripe { get; set; }              // 1915
-        public decimal AccountVipps { get; set; }               // 1918
+        public decimal AccountStripe { get; set; }              // 1912
+        public decimal AccountVipps { get; set; }               // 1914
         public decimal AccountBank { get; set; }                // 1920
 
         public decimal VATPurchase { get; set; }
