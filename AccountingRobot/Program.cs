@@ -87,6 +87,7 @@ namespace AccountingRobot
                 var ws = wb.Worksheets.Add("Bilagsjournal");
 
                 // add accounting headers
+                ws.Cell(1, 1).Value = "Næringsoppgave";
                 ws.Cell(1, 16).Value = "1910";
                 ws.Cell(1, 17).Value = "1912";
                 ws.Cell(1, 18).Value = "1914";
@@ -116,6 +117,13 @@ namespace AccountingRobot
                 ws.Cell(1, 44).Value = "8199";
                 ws.Cell(1, 45).Value = "1200";
                 ws.Cell(1, 46).Value = "1500";
+
+                // set font color for header range
+                var headerRange = ws.Range("A1:AX1");
+                headerRange.Style.Font.FontColor = XLColor.White;
+                headerRange.Style.Font.Bold = true;
+                headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                headerRange.Style.Fill.BackgroundColor = XLColor.Black;
 
                 // insert datatable in row 2
                 var table = ws.Cell(2, 1).InsertTable(dt);
@@ -244,7 +252,7 @@ namespace AccountingRobot
 
                 // how many new rows needs to be added
                 int newRowTotalCount = newAccountingElements.Count();
-                Console.Out.WriteLine("Appending {0} rows", newRowTotalCount);
+                Console.Out.WriteLine("\nAppending {0} rows", newRowTotalCount);
                 if (newRowTotalCount > 0)
                 {
                     // turn off totals row before adding more rows
