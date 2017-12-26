@@ -8,6 +8,7 @@ namespace AccountingRobot
 {
     public class StripeTransaction
     {
+        public string TransactionID { get; set; }
         public DateTime Created { get; set; }
         public bool Paid { get; set; }
         public string CustomerEmail { get; set; }

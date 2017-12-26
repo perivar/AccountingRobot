@@ -10,6 +10,7 @@ namespace AccountingRobot
 
         public int Number { get; set; }
         public long ArchiveReference { get; set; }
+        public string TransactionID { get; set; }
         public string Type { get; set; } // Overføring (intern), Overførsel (ekstern), Visa, Avgift
         public string AccountingType { get; set; }
         public string Text { get; set; }
@@ -72,6 +73,7 @@ namespace AccountingRobot
 
             return 
                 ArchiveReference == other.ArchiveReference &&
+                TransactionID == other.TransactionID &&
                 //Type == other.Type &&
                 Date == other.Date &&
                 string.Equals(Text, other.Text) &&
@@ -97,6 +99,7 @@ namespace AccountingRobot
             {
                 var hashCode = 13;
                 hashCode = (hashCode * 397) ^ ArchiveReference.GetHashCode();
+                hashCode = (hashCode * 397) ^ (!string.IsNullOrEmpty(TransactionID) ? TransactionID.GetHashCode() : 0);                
                 //hashCode = (hashCode * 397) ^ (!string.IsNullOrEmpty(Type) ? Type.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (!string.IsNullOrEmpty(Text) ? Text.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ Date.GetHashCode();

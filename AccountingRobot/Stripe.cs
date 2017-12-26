@@ -11,8 +11,11 @@ namespace AccountingRobot
 {
     public static class Stripe
     {
-        public static List<StripeBalanceTransaction> GetBalanceTransactions(string stripeApiKey)
+        public static List<StripeBalanceTransaction> GetBalanceTransactions()
         {
+            // get stripe configuration parameters
+            string stripeApiKey = ConfigurationManager.AppSettings["StripeApiKey"];
+
             StripeConfiguration.SetApiKey(stripeApiKey);
             var balanceService = new StripeBalanceService();
             var allBalanceTransactions = new List<StripeBalanceTransaction>();
@@ -87,6 +90,25 @@ namespace AccountingRobot
             }
 
             return allCharges;
+        }
+
+        public static List<StripeTransaction> GetAllPayoutTransactions()
+        {
+            var stripeBalanceTransactions = Stripe.GetBalanceTransactions();
+
+            var stripePayoutsQuery = (from balanceTransaction in stripeBalanceTransactions
+                                      where balanceTransaction.Type == "payout"
+                                      select new StripeTransaction
+                                      {
+                                          Created = balanceTransaction.AvailableOn,
+                                          Paid = balanceTransaction.Status == "available",
+                                          Amount = (decimal)balanceTransaction.Amount / 100,
+                                          Net = (decimal)balanceTransaction.Net / 100,
+                                          Fee = (decimal)balanceTransaction.Fee / 100,
+                                          TransactionID = balanceTransaction.Id
+                                      }).ToList();
+
+            return stripePayoutsQuery;
         }
 
         public static List<StripeTransaction> GetLatestStripeTransactions(bool forceUpdate = false)
@@ -253,6 +275,8 @@ namespace AccountingRobot
                     stripeTransaction.Amount = (decimal)charge.Amount / 100;
                     stripeTransaction.Net = (decimal)charge.BalanceTransaction.Net / 100;
                     stripeTransaction.Fee = (decimal)charge.BalanceTransaction.Fee / 100;
+                    stripeTransaction.TransactionID = charge.Id;
+
                     stripeTransactions.Add(stripeTransaction);
                 }
             }
