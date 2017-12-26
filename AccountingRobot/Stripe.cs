@@ -282,5 +282,172 @@ namespace AccountingRobot
             }
             return stripeTransactions;
         }
+
+        public static List<StripeTransaction> GetLatestStripePayoutTransactions(bool forceUpdate = false)
+        {
+            // get stripe configuration parameters
+            string stripeApiKey = ConfigurationManager.AppSettings["StripeApiKey"];
+            string cacheDir = ConfigurationManager.AppSettings["CacheDir"];
+            string cacheFileNamePrefix = "Stripe Payout Transactions";
+
+            var lastCacheFile = Utils.FindLastCacheFile(cacheDir, cacheFileNamePrefix);
+
+            var currentDate = DateTime.Now.Date;
+            var firstDayOfTheYear = new DateTime(currentDate.Year, 1, 1);
+            var lastDayOfTheYear = new DateTime(currentDate.Year, 12, 31);
+
+            // check if we have a cache file
+            DateTime from = default(DateTime);
+            DateTime to = default(DateTime);
+
+            // if the cache file object has values
+            if (!lastCacheFile.Equals(default(KeyValuePair<DateTime, string>)))
+            {
+                from = lastCacheFile.Key.Date;
+                to = currentDate;
+
+                // if the from date is today, then we already have an updated file so use cache
+                if (from.Equals(to))
+                {
+                    // use latest cache file (or force an update)
+                    return GetStripePayoutTransactions(lastCacheFile.Value, stripeApiKey, from, to, forceUpdate);
+                }
+                else if (from != firstDayOfTheYear)
+                {
+                    // we have to combine two files:
+                    // the original cache file and the new transactions file
+                    Console.Out.WriteLine("Finding Stripe payout transactions from {0:yyyy-MM-dd} to {1:yyyy-MM-dd}", from, to);
+                    var newStripePayoutTransactions = GetStripePayoutTransactions(stripeApiKey, from, to);
+                    var originalStripePayoutTransactions = Utils.ReadCacheFile<StripeTransaction>(lastCacheFile.Value);
+
+                    // copy all the original stripe transactions into a new file, except entries that are 
+                    // from the from date or newer
+                    var updatedStripePayoutTransactions = originalStripePayoutTransactions.Where(p => p.Created < from).ToList();
+
+                    // and add the new transactions to beginning of list
+                    updatedStripePayoutTransactions.InsertRange(0, newStripePayoutTransactions);
+
+                    // and store to new file
+                    string newCacheFilePath = Path.Combine(cacheDir, string.Format("{0}-{1:yyyy-MM-dd}-{2:yyyy-MM-dd}.csv", cacheFileNamePrefix, firstDayOfTheYear, to));
+                    using (var sw = new StreamWriter(newCacheFilePath))
+                    {
+                        var csvWriter = new CsvWriter(sw);
+                        csvWriter.Configuration.Delimiter = ",";
+                        csvWriter.Configuration.HasHeaderRecord = true;
+                        csvWriter.Configuration.CultureInfo = CultureInfo.InvariantCulture;
+
+                        csvWriter.WriteRecords(updatedStripePayoutTransactions);
+                    }
+
+                    Console.Out.WriteLine("Successfully wrote file to {0}", newCacheFilePath);
+                    return updatedStripePayoutTransactions;
+                }
+            }
+            else
+            {
+                // find all from beginning of year until now
+                from = firstDayOfTheYear;
+                to = currentDate;
+            }
+
+            // get updated payout transactions (or from cache file if update is forced)
+            string cacheFilePath = Path.Combine(cacheDir, string.Format("{0}-{1:yyyy-MM-dd}-{2:yyyy-MM-dd}.csv", cacheFileNamePrefix, from, to));
+            return GetStripePayoutTransactions(cacheFilePath, stripeApiKey, from, to, forceUpdate);
+        }
+
+        static List<StripeTransaction> GetStripePayoutTransactions(string cacheFilePath, string stripeApiKey, DateTime from, DateTime to, bool forceUpdate = false)
+        {
+            var cachedStripeTransactions = Utils.ReadCacheFile<StripeTransaction>(cacheFilePath, forceUpdate);
+            if (cachedStripeTransactions != null && cachedStripeTransactions.Count() > 0)
+            {
+                Console.Out.WriteLine("Using cache file {0}.", cacheFilePath);
+                return cachedStripeTransactions;
+            }
+            else
+            {
+                Console.Out.WriteLine("Finding Stripe payout transactions from {0:yyyy-MM-dd} to {1:yyyy-MM-dd}", from, to);
+                var stripeTransactions = GetStripePayoutTransactions(stripeApiKey, from, to);
+
+                using (var sw = new StreamWriter(cacheFilePath))
+                {
+                    var csvWriter = new CsvWriter(sw);
+                    csvWriter.Configuration.Delimiter = ",";
+                    csvWriter.Configuration.HasHeaderRecord = true;
+                    csvWriter.Configuration.CultureInfo = CultureInfo.InvariantCulture;
+
+                    csvWriter.WriteRecords(stripeTransactions);
+                }
+
+                Console.Out.WriteLine("Successfully wrote file to {0}", cacheFilePath);
+                return stripeTransactions;
+            }
+        }
+
+        static List<StripeTransaction> GetStripePayoutTransactions(string stripeApiKey, DateTime from, DateTime to)
+        {
+            StripeConfiguration.SetApiKey(stripeApiKey);
+
+            var balanceService = new StripeBalanceService();
+            var allBalanceTransactions = new List<StripeBalanceTransaction>();
+            var lastId = String.Empty;
+
+            int MAX_PAGINATION = 100;
+            int itemsExpected = MAX_PAGINATION;
+            while (itemsExpected == MAX_PAGINATION)
+            {
+                IEnumerable<StripeBalanceTransaction> charges = null;
+                if (String.IsNullOrEmpty(lastId))
+                {
+                    charges = balanceService.List(
+                    new StripeBalanceTransactionListOptions()
+                    {
+                        Limit = MAX_PAGINATION,
+                        Created = new StripeDateFilter
+                        {
+                            GreaterThanOrEqual = from.Date,
+                            LessThanOrEqual = to.Date
+                        }
+                    });
+                    itemsExpected = charges.Count();
+                }
+                else
+                {
+                    charges = balanceService.List(
+                    new StripeBalanceTransactionListOptions()
+                    {
+                        Limit = MAX_PAGINATION,
+                        StartingAfter = lastId,
+                        Created = new StripeDateFilter
+                        {
+                            GreaterThanOrEqual = from.Date,
+                            LessThanOrEqual = to.Date
+                        }
+                    });
+                    itemsExpected = charges.Count();
+                }
+
+                allBalanceTransactions.AddRange(charges);
+                if (allBalanceTransactions.Count() > 0) lastId = charges.LastOrDefault().Id;
+            }
+
+            var stripeTransactions = new List<StripeTransaction>();
+            foreach (var balanceTransaction in allBalanceTransactions)
+            {
+                // only process the charges that are payouts
+                if (balanceTransaction.Type == "payout")
+                {
+                    var stripeTransaction = new StripeTransaction();
+                    stripeTransaction.Created = balanceTransaction.AvailableOn;
+                    stripeTransaction.Paid = (balanceTransaction.Status == "available");
+                    stripeTransaction.Amount = (decimal)balanceTransaction.Amount / 100;
+                    stripeTransaction.Net = (decimal)balanceTransaction.Net / 100;
+                    stripeTransaction.Fee = (decimal)balanceTransaction.Fee / 100;
+                    stripeTransaction.TransactionID = balanceTransaction.Id;
+
+                    stripeTransactions.Add(stripeTransaction);
+                }
+            }
+            return stripeTransactions;
+        }
     }
 }

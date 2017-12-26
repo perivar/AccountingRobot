@@ -743,7 +743,7 @@ namespace AccountingRobot
             var to = currentDate;
 
             // prepopulate some lookup lists
-            var stripePayoutTransactions = Stripe.GetAllPayoutTransactions();
+            var stripePayoutTransactions = Stripe.GetLatestStripePayoutTransactions();
             var oberloOrders = Oberlo.GetLatestOberloOrders();
             var aliExpressOrders = AliExpress.GetLatestAliExpressOrders();
             var aliExpressOrderGroups = AliExpress.CombineOrders(aliExpressOrders);
