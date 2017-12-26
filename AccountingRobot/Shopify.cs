@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -73,11 +74,11 @@ namespace AccountingRobot
                 foreach (var order in jsonDe.orders)
                 {
                     var shopifyOrder = new ShopifyOrder();
+
                     shopifyOrder.Id = order.id;
                     shopifyOrder.CreatedAt = order.created_at;
                     shopifyOrder.ProcessedAt = order.processed_at;
                     shopifyOrder.UpdatedAt = order.updated_at;
-
                     shopifyOrder.Name = order.name;
                     shopifyOrder.FinancialStatus = order.financial_status;
                     string fulfillmentStatusTmp = order.fulfillment_status;
@@ -100,7 +101,17 @@ namespace AccountingRobot
                     shopifyOrder.CustomerCity = order.customer.default_address.city;
                     shopifyOrder.CustomerZipCode = order.customer.default_address.zip;
 
-                    if (shopifyOrder.Name.Equals("#1002"))
+                    // check if cancelled_at exists (meaning the order has been cancelled)
+                    var cancelledAt = order.cancelled_at;
+                    if (cancelledAt != null && cancelledAt.Type != JTokenType.Null)
+                    {
+                        shopifyOrder.CancelledAt = order.cancelled_at;
+                    }
+
+                    // also add note
+                    shopifyOrder.Note = order.note;
+
+                    if (shopifyOrder.Name.Equals("#1103"))
                     {
                         // breakpoint here
                     }

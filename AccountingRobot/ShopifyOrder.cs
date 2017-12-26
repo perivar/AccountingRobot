@@ -9,6 +9,7 @@ namespace AccountingRobot
         public DateTime CreatedAt { get; set; }
         public DateTime ProcessedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public DateTime CancelledAt { get; set; }
 
         public string Name { get; set; }
         public string FinancialStatus { get; set; }
@@ -26,6 +27,16 @@ namespace AccountingRobot
         public string CustomerAddress2 { get; set; }
         public string CustomerZipCode { get; set; }
         public string CustomerCity { get; set; }
+
+        public string Note { get; set; }
+
+        public bool Cancelled
+        {
+            get
+            {
+                return (CancelledAt != default(DateTime) ? true : false);
+            }
+        }
 
         public override string ToString()
         {
