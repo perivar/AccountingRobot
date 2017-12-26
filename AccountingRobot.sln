@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.27130.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccountingRobot", "AccountingRobot\AccountingRobot.csproj", "{37D88466-2208-45CB-B47C-CA0CDAB42431}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VerifyTool", "VerifyTool\VerifyTool.csproj", "{17D28FFD-F604-40B3-848E-CCDB30DF60F9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{37D88466-2208-45CB-B47C-CA0CDAB42431}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{37D88466-2208-45CB-B47C-CA0CDAB42431}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{37D88466-2208-45CB-B47C-CA0CDAB42431}.Release|Any CPU.Build.0 = Release|Any CPU
+		{17D28FFD-F604-40B3-848E-CCDB30DF60F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{17D28FFD-F604-40B3-848E-CCDB30DF60F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{17D28FFD-F604-40B3-848E-CCDB30DF60F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{17D28FFD-F604-40B3-848E-CCDB30DF60F9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
