@@ -73,12 +73,12 @@ namespace AccountingRobot
 
             return 
                 ArchiveReference == other.ArchiveReference &&
-                TransactionID == other.TransactionID &&
+                //TransactionID == other.TransactionID &&
                 //Type == other.Type &&
                 Date == other.Date &&
                 string.Equals(Text, other.Text) &&
-                AccountPaypal == other.AccountPaypal &&
-                AccountStripe == other.AccountStripe &&
+                //AccountPaypal == other.AccountPaypal &&
+                //AccountStripe == other.AccountStripe &&
                 //AccountVipps == other.AccountVipps &&
                 AccountBank == other.AccountBank;
         }
@@ -99,12 +99,12 @@ namespace AccountingRobot
             {
                 var hashCode = 13;
                 hashCode = (hashCode * 397) ^ ArchiveReference.GetHashCode();
-                hashCode = (hashCode * 397) ^ (!string.IsNullOrEmpty(TransactionID) ? TransactionID.GetHashCode() : 0);                
+                //hashCode = (hashCode * 397) ^ (!string.IsNullOrEmpty(TransactionID) ? TransactionID.GetHashCode() : 0);                
                 //hashCode = (hashCode * 397) ^ (!string.IsNullOrEmpty(Type) ? Type.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (!string.IsNullOrEmpty(Text) ? Text.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ Date.GetHashCode();
-                hashCode = (hashCode * 397) ^ AccountPaypal.GetHashCode();
-                hashCode = (hashCode * 397) ^ AccountStripe.GetHashCode();
+                //hashCode = (hashCode * 397) ^ AccountPaypal.GetHashCode();
+                //hashCode = (hashCode * 397) ^ AccountStripe.GetHashCode();
                 //hashCode = (hashCode * 397) ^ AccountVipps.GetHashCode();
                 hashCode = (hashCode * 397) ^ AccountBank.GetHashCode();
 

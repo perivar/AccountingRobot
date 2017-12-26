@@ -15,6 +15,7 @@ namespace AccountingRobot
         static void Main(string[] args)
         {
             //CheckPayPal(@"C:\Users\pnerseth\Amazon Drive\Documents\Private\wazalo\regnskap\wazalo regnskap-2017-01-01-2017-12-26.xlsx");
+            //Console.ReadLine();
             //return;
 
             // prepopulate lookup lists
@@ -97,6 +98,9 @@ namespace AccountingRobot
             var stripeTransactions = Stripe.GetLatestStripeTransactions();
             Console.Out.WriteLine("Successfully read Stripe transactions ...");
 
+            var stripePayoutTransactions = Stripe.GetLatestStripePayoutTransactions();
+            Console.Out.WriteLine("Successfully read Stripe payout transactions ...");
+
             XLWorkbook wb = new XLWorkbook(filePath);
             IXLWorksheet ws = wb.Worksheet("Bilagsjournal");
 
@@ -177,37 +181,32 @@ namespace AccountingRobot
                      select row);
 
                 // identify elements from the paypal list that doesn't exist in the spreadsheet
+                var foundDict = new Dictionary<string, PayPalTransaction>();
+                var notFoundDict = new Dictionary<string, PayPalTransaction>();
                 foreach (var payPalTransaction in payPalTransactions)
                 {
                     var foundPaypalTransaction =
                         (from row in existingPayPalTransactions
                          where
-                         row.Value.Date == payPalTransaction.Timestamp &&
-                         row.Value.AccountPaypal == payPalTransaction.NetAmount
+                         row.Value.TransactionID == payPalTransaction.TransactionID
                          orderby row.Value.Number ascending
                          select row);
 
                     if (foundPaypalTransaction.Count() > 0)
                     {
-
+                        foundDict.Add(payPalTransaction.TransactionID, payPalTransaction);
                     }
                     else
                     {
-
+                        notFoundDict.Add(payPalTransaction.TransactionID, payPalTransaction);
                     }
                 }
 
-                /*
-                int counter = 0;
-                int totalCount = existingPayPalTransactions.Count();
-                Console.Out.WriteLine("Checking {0} rows", totalCount);
-                foreach (var row in existingPayPalTransactions)
+                Console.Out.WriteLine("No PayPal transactions not found in spreadsheet {0}", notFoundDict.Count());
+                foreach (var notFound in notFoundDict)
                 {
-                    counter++;
-                    Console.Out.Write("\rChecking row {0}/{1} ({2})", counter, totalCount, row.Key.RangeAddress);
-
+                    Console.Out.WriteLine("{0}", notFound.Value);
                 }
-                */
             }
         }
 
@@ -875,6 +874,8 @@ namespace AccountingRobot
 
             // prepopulate some lookup lists
             var stripePayoutTransactions = Stripe.GetLatestStripePayoutTransactions();
+            Console.Out.WriteLine("Successfully read Stripe payout transactions ...");
+
             var oberloOrders = Oberlo.GetLatestOberloOrders();
             var aliExpressOrders = AliExpress.GetLatestAliExpressOrders();
             var aliExpressOrderGroups = AliExpress.CombineOrders(aliExpressOrders);

@@ -17,5 +17,10 @@ namespace AccountingRobot
         public decimal FeeAmount { get; set; }
         public string Payer { get; set; }
         public string PayerDisplayName { get; set; }
+
+        public override string ToString()
+        {
+            return string.Format("{0:dd.MM.yyyy} {1} {2} {3:N} {4:N} {5:N} {6}", Timestamp, Type, Status, GrossAmount, NetAmount, FeeAmount, PayerDisplayName);
+        }
     }
 }
