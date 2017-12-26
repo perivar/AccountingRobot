@@ -269,13 +269,16 @@ namespace AccountingRobot
                 if (charge.Paid)
                 {
                     var stripeTransaction = new StripeTransaction();
+                    stripeTransaction.TransactionID = charge.Id;
                     stripeTransaction.Created = charge.Created;
                     stripeTransaction.Paid = charge.Paid;
                     stripeTransaction.CustomerEmail = charge.Metadata["email"];
                     stripeTransaction.Amount = (decimal)charge.Amount / 100;
                     stripeTransaction.Net = (decimal)charge.BalanceTransaction.Net / 100;
                     stripeTransaction.Fee = (decimal)charge.BalanceTransaction.Fee / 100;
-                    stripeTransaction.TransactionID = charge.Id;
+                    stripeTransaction.Currency = charge.Currency;
+                    stripeTransaction.Description = charge.Description;
+                    stripeTransaction.Status = charge.Status;
 
                     stripeTransactions.Add(stripeTransaction);
                 }
@@ -437,12 +440,16 @@ namespace AccountingRobot
                 if (balanceTransaction.Type == "payout")
                 {
                     var stripeTransaction = new StripeTransaction();
-                    stripeTransaction.Created = balanceTransaction.AvailableOn;
+                    stripeTransaction.TransactionID = balanceTransaction.Id;
+                    stripeTransaction.Created = balanceTransaction.Created;
+                    stripeTransaction.AvailableOn = balanceTransaction.AvailableOn;
                     stripeTransaction.Paid = (balanceTransaction.Status == "available");
                     stripeTransaction.Amount = (decimal)balanceTransaction.Amount / 100;
                     stripeTransaction.Net = (decimal)balanceTransaction.Net / 100;
                     stripeTransaction.Fee = (decimal)balanceTransaction.Fee / 100;
-                    stripeTransaction.TransactionID = balanceTransaction.Id;
+                    stripeTransaction.Currency = balanceTransaction.Currency;
+                    stripeTransaction.Description = balanceTransaction.Description;
+                    stripeTransaction.Status = balanceTransaction.Status;
 
                     stripeTransactions.Add(stripeTransaction);
                 }

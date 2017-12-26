@@ -68,6 +68,7 @@ namespace AccountingRobot
             {
                 Console.Out.WriteLine("Found an accounting spreadsheet from {0:yyyy-MM-dd}", lastAccountingFile.Key);
                 UpdateExcelFile(lastAccountingFile.Value, accountingItems);
+                //UpdateExcelFileWithTransactionsIds(lastAccountingFile.Value, accountingItems);
             }
             else
             {
@@ -484,6 +485,136 @@ namespace AccountingRobot
             Console.Out.WriteLine("Successfully updated accounting file!");
         }
 
+        static void UpdateExcelFileWithTransactionsIds(string filePath, List<AccountingItem> newAccountingItems)
+        {
+            XLWorkbook wb = new XLWorkbook(filePath);
+            IXLWorksheet ws = wb.Worksheet("Bilagsjournal");
+
+            IXLTables tables = ws.Tables;
+            IXLTable table = tables.FirstOrDefault();
+
+            var existingAccountingItems = new Dictionary<IXLTableRow, AccountingItem>();
+            if (table != null)
+            {
+                foreach (var row in table.DataRange.Rows())
+                {
+                    var accountingItem = new AccountingItem();
+                    accountingItem.Date = ExcelUtils.GetExcelField<DateTime>(row, "Dato");
+                    accountingItem.Number = ExcelUtils.GetExcelField<int>(row, "Bilagsnr.");
+                    accountingItem.ArchiveReference = ExcelUtils.GetExcelField<long>(row, "Arkivreferanse");
+                    accountingItem.TransactionID = ExcelUtils.GetExcelField<string>(row, "TransaksjonsId");
+                    accountingItem.Type = ExcelUtils.GetExcelField<string>(row, "Type");
+                    accountingItem.AccountingType = ExcelUtils.GetExcelField<string>(row, "Regnskapstype");
+                    accountingItem.Text = ExcelUtils.GetExcelField<string>(row, "Tekst");
+                    accountingItem.CustomerName = ExcelUtils.GetExcelField<string>(row, "Kundenavn");
+                    accountingItem.ErrorMessage = ExcelUtils.GetExcelField<string>(row, "Feilmelding");
+                    accountingItem.Gateway = ExcelUtils.GetExcelField<string>(row, "Gateway");
+                    accountingItem.NumSale = ExcelUtils.GetExcelField<string>(row, "Num Salg");
+                    accountingItem.NumPurchase = ExcelUtils.GetExcelField<string>(row, "Num Kjøp");
+                    accountingItem.PurchaseOtherCurrency = ExcelUtils.GetExcelField<decimal>(row, "Kjøp annen valuta");
+                    accountingItem.OtherCurrency = ExcelUtils.GetExcelField<string>(row, "Annen valuta");
+
+                    accountingItem.AccountPaypal = ExcelUtils.GetExcelField<decimal>(row, "Paypal");	// 1910
+                    accountingItem.AccountStripe = ExcelUtils.GetExcelField<decimal>(row, "Stripe");	// 1915
+                    accountingItem.AccountVipps = ExcelUtils.GetExcelField<decimal>(row, "Vipps");	// 1918
+                    accountingItem.AccountBank = ExcelUtils.GetExcelField<decimal>(row, "Bank");	// 1920
+
+                    accountingItem.VATPurchase = ExcelUtils.GetExcelField<decimal>(row, "MVA Kjøp");
+                    accountingItem.VATSales = ExcelUtils.GetExcelField<decimal>(row, "MVA Salg");
+
+                    accountingItem.SalesVAT = ExcelUtils.GetExcelField<decimal>(row, "Salg mva-pliktig");	// 3000
+                    accountingItem.SalesVATExempt = ExcelUtils.GetExcelField<decimal>(row, "Salg avgiftsfritt");	// 3100
+
+                    accountingItem.CostOfGoods = ExcelUtils.GetExcelField<decimal>(row, "Varekostnad");	// 4005
+                    accountingItem.CostForReselling = ExcelUtils.GetExcelField<decimal>(row, "Forbruk for videresalg");	// 4300
+                    accountingItem.CostForSalary = ExcelUtils.GetExcelField<decimal>(row, "Lønn");	// 5000
+                    accountingItem.CostForSalaryTax = ExcelUtils.GetExcelField<decimal>(row, "Arb.giver avgift");	// 5400
+                    accountingItem.CostForDepreciation = ExcelUtils.GetExcelField<decimal>(row, "Avskrivninger");	// 6000
+                    accountingItem.CostForShipping = ExcelUtils.GetExcelField<decimal>(row, "Frakt");	// 6100
+                    accountingItem.CostForElectricity = ExcelUtils.GetExcelField<decimal>(row, "Strøm");	// 6340 
+                    accountingItem.CostForToolsInventory = ExcelUtils.GetExcelField<decimal>(row, "Verktøy inventar");	// 6500
+                    accountingItem.CostForMaintenance = ExcelUtils.GetExcelField<decimal>(row, "Vedlikehold");	// 6695
+                    accountingItem.CostForFacilities = ExcelUtils.GetExcelField<decimal>(row, "Kontorkostnader");	// 6800 
+
+                    accountingItem.CostOfData = ExcelUtils.GetExcelField<decimal>(row, "Datakostnader");	// 6810 
+                    accountingItem.CostOfPhoneInternet = ExcelUtils.GetExcelField<decimal>(row, "Telefon Internett");	// 6900
+                    accountingItem.CostForTravelAndAllowance = ExcelUtils.GetExcelField<decimal>(row, "Reise og Diett");	// 7140
+                    accountingItem.CostOfAdvertising = ExcelUtils.GetExcelField<decimal>(row, "Reklamekostnader");	// 7330
+                    accountingItem.CostOfOther = ExcelUtils.GetExcelField<decimal>(row, "Diverse annet");	// 7700
+
+                    accountingItem.FeesBank = ExcelUtils.GetExcelField<decimal>(row, "Gebyrer Bank");	// 7770
+                    accountingItem.FeesPaypal = ExcelUtils.GetExcelField<decimal>(row, "Gebyrer Paypal");	// 7780
+                    accountingItem.FeesStripe = ExcelUtils.GetExcelField<decimal>(row, "Gebyrer Stripe");	// 7785 
+
+                    accountingItem.CostForEstablishment = ExcelUtils.GetExcelField<decimal>(row, "Etableringskostnader");	// 7790
+
+                    accountingItem.IncomeFinance = ExcelUtils.GetExcelField<decimal>(row, "Finansinntekter");	// 8099
+                    accountingItem.CostOfFinance = ExcelUtils.GetExcelField<decimal>(row, "Finanskostnader");	// 8199
+
+                    accountingItem.Investments = ExcelUtils.GetExcelField<decimal>(row, "Investeringer");	// 1200
+                    accountingItem.AccountsReceivable = ExcelUtils.GetExcelField<decimal>(row, "Kundefordringer");	// 1500
+                    accountingItem.PersonalWithdrawal = ExcelUtils.GetExcelField<decimal>(row, "Privat uttak");
+                    accountingItem.PersonalDeposit = ExcelUtils.GetExcelField<decimal>(row, "Privat innskudd");
+
+                    existingAccountingItems.Add(row, accountingItem);
+                }
+
+                // reduce the old Accounting Spreadsheet and remove the entries that doesn't have a number
+                var existingAccountingItemsToUpdate =
+                    (from row in existingAccountingItems
+                     where
+                     row.Value.Gateway == "stripe"
+                     || row.Value.Gateway == "paypal"
+                     orderby row.Value.Number ascending
+                     select row);
+
+                int updateRowCounter = 0;
+                int updateRowTotalCount = existingAccountingItemsToUpdate.Count();
+                Console.Out.WriteLine("Updating {0} rows", updateRowTotalCount);
+                foreach (var updateRow in existingAccountingItemsToUpdate)
+                {
+                    updateRowCounter++;
+                    Console.Out.Write("\rUpdating row {0}/{1} ({2})", updateRowCounter, updateRowTotalCount, updateRow.Key.RangeAddress);
+
+                    // find match
+                    var result = (from a in newAccountingItems
+                                  where a.ArchiveReference == updateRow.Value.ArchiveReference
+                                  && a.Date == updateRow.Value.Date
+                                  && a.Text == updateRow.Value.Text
+                                  && a.AccountPaypal == updateRow.Value.AccountPaypal
+                                  && a.AccountStripe == updateRow.Value.AccountStripe
+                                  select a).ToList();
+                    if (result.Count() > 0)
+                    {
+                        if (result.Count() > 1)
+                        {
+                            // error
+                            Console.Out.Write("\rFailed finding only single matching accounting entries to update from {0} ...", updateRow.Key.RangeAddress);
+                            return;
+                        }
+                        else
+                        {
+                            var matchingAccountingElement = result.First();
+                            updateRow.Key.Cell(6).Value = matchingAccountingElement.TransactionID;
+                            updateRow.Key.Cell(11).Value = matchingAccountingElement.ErrorMessage;
+                        }
+                    }
+                    else
+                    {
+                        // error, none found
+                        Console.Out.Write("\rFailed finding matching accounting entry to update from {0} ...", updateRow.Key.RangeAddress);
+                    }
+                }
+            }
+
+            // resize
+            ws.Columns().AdjustToContents();  // Adjust column width
+            ws.Rows().AdjustToContents();     // Adjust row heights
+
+            wb.Save();
+            Console.Out.WriteLine("\rSuccessfully updated accounting file!");
+        }
+
         static void SetExcelRowFormulas(IXLRangeRow row)
         {
             int currentRow = row.RowNumber();
@@ -762,6 +893,8 @@ namespace AccountingRobot
             incomingBalance.Type = "Saldo";
             accountingList.Add(incomingBalance);
 
+            // define hashes so we can track used order numbers and transaction Ids
+            var usedStripePayoutTransactionIDs = new HashSet<string>();
             var usedOrderNumbers = new HashSet<string>();
 
             // and map each one to the right meta information
@@ -779,6 +912,11 @@ namespace AccountingRobot
 
                 accountingItem.ArchiveReference = skandiabankenTransaction.ArchiveReference;
                 accountingItem.Type = skandiabankenTransaction.Type;
+
+                if (accountingItem.ArchiveReference == 50975003532)
+                {
+                    // breakpoint here
+                }
 
                 // extract properties from the transaction text
                 skandiabankenTransaction.ExtractAccountingInformation();
@@ -882,25 +1020,43 @@ namespace AccountingRobot
 
                     accountingItem.AccountStripe = -skandiabankenTransaction.AccountChange;
                     accountingItem.AccountBank = skandiabankenTransaction.AccountChange;
-                    
+
                     // lookup the stripe payout transaction
-                    var startDate = skandiabankenTransaction.ExternalPurchaseDate.AddDays(-3);
-                    var endDate = skandiabankenTransaction.ExternalPurchaseDate.AddDays(1);
+                    var startDate = skandiabankenTransaction.ExternalPurchaseDate.AddDays(-4);
+                    var endDate = skandiabankenTransaction.ExternalPurchaseDate.AddDays(4);
 
                     var stripeQuery =
                     from transaction in stripePayoutTransactions
                     where
                     transaction.Paid &&
                     transaction.Net == -skandiabankenTransaction.AccountChange &&
-                     (transaction.Created.Date >= startDate.Date && transaction.Created.Date <= endDate.Date)
+                     (transaction.AvailableOn.Date >= startDate.Date && transaction.AvailableOn.Date <= endDate.Date)
                     orderby transaction.Created ascending
                     select transaction;
 
                     if (stripeQuery.Count() > 1)
                     {
-                        // more than one ?!
-                        Console.Out.WriteLine("ERROR: FOUND MORE THAN ONE MATCHING STRIPE PAYOUT!");
-                        accountingItem.ErrorMessage = "Stripe: More than one payout found, choose one";
+                        Console.WriteLine("\tSEVERAL MATCHING STRIPE PAYOUTS FOUND ...");
+
+                        bool notFound = true;
+                        foreach (var item in stripeQuery.Reverse())
+                        {
+                            var stripePayoutTransactionID = item.TransactionID;
+                            if (!usedStripePayoutTransactionIDs.Contains(stripePayoutTransactionID))
+                            {
+                                notFound = false;
+                                usedStripePayoutTransactionIDs.Add(stripePayoutTransactionID);
+                                accountingItem.TransactionID = stripePayoutTransactionID;
+                                Console.WriteLine("\tSELECTED: {0} {1}", accountingItem.TransactionID, accountingItem.Text);
+                                break;
+                            }
+                        }
+
+                        if (notFound)
+                        {
+                            Console.Out.WriteLine("ERROR: COULD NOT FIND MATCHING STRIPE PAYOUT!");
+                            accountingItem.ErrorMessage = "Stripe: Could not find matching payout";
+                        }
                     }
                     else if (stripeQuery.Count() > 0)
                     {
