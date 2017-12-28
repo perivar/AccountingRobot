@@ -14,9 +14,6 @@ namespace AccountingRobot
     {
         static void Main(string[] args)
         {
-            // download skandiabanken bank statement
-            Skandiabanken.DownloadBankStatement();
-
             // prepopulate lookup lists
             Console.Out.WriteLine("Prepopulating Lookup Lists ...");
 
@@ -34,22 +31,8 @@ namespace AccountingRobot
             customerNames = customerNames.Distinct().ToList();
 
             // find latest skandiabanken transaction spreadsheet
-            var accountingBankItems = default(List<AccountingItem>);
-            string cacheDir = ConfigurationManager.AppSettings["CacheDir"];
-            string cacheFileNamePrefix = "97132735232";
-            string dateFromToRegexPattern = @"(\d{4}_\d{2}_\d{2})\-(\d{4}_\d{2}_\d{2})\.xlsx$";
-            var lastCacheFile = Utils.FindLastCacheFile(cacheDir, cacheFileNamePrefix, dateFromToRegexPattern, "yyyy_MM_dd", "_");
-
-            // if the cache file object has values
-            if (!lastCacheFile.Equals(default(KeyValuePair<DateTime, string>)))
-            {
-                accountingBankItems = ProcessBankAccountStatement(lastCacheFile.Value, customerNames, stripeTransactions, paypalTransactions);
-            }
-            else
-            {
-                Console.Out.WriteLine("Error! No SBanken transaction file found!.");
-                return;
-            }
+            var skandiabankenBankStatement = Skandiabanken.GetLatestBankStatement();
+            var accountingBankItems = ProcessBankAccountStatement(skandiabankenBankStatement, customerNames, stripeTransactions, paypalTransactions);
 
             // merge into one list
             accountingShopifyItems.AddRange(accountingBankItems);
@@ -742,7 +725,7 @@ namespace AccountingRobot
         }
         #endregion
 
-        static List<AccountingItem> ProcessBankAccountStatement(string skandiabankenXLSX, List<string> customerNames, List<StripeTransaction> stripeTransactions, List<PayPalTransaction> paypalTransactions)
+        static List<AccountingItem> ProcessBankAccountStatement(SkandiabankenBankStatement skandiabankenBankStatement, List<string> customerNames, List<StripeTransaction> stripeTransactions, List<PayPalTransaction> paypalTransactions)
         {
             var accountingList = new List<AccountingItem>();
 
@@ -760,7 +743,6 @@ namespace AccountingRobot
             var aliExpressOrderGroups = AliExpress.CombineOrders(aliExpressOrders);
 
             // run through the bank account transactions
-            var skandiabankenBankStatement = Skandiabanken.ReadBankStatement(skandiabankenXLSX);
             var skandiabankenTransactions = skandiabankenBankStatement.Transactions;
 
             // add incoming balance

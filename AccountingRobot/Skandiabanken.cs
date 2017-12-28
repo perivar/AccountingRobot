@@ -12,6 +12,56 @@ namespace AccountingRobot
 {
     public static class Skandiabanken
     {
+        public static SkandiabankenBankStatement GetLatestBankStatement(bool forceUpdate = false)
+        {
+            string cacheDir = ConfigurationManager.AppSettings["CacheDir"];
+            string cacheFileNamePrefix = ConfigurationManager.AppSettings["SBankenAccountNumber"];
+
+            string dateFromToRegexPattern = @"(\d{4}_\d{2}_\d{2})\-(\d{4}_\d{2}_\d{2})\.xlsx$";
+            var lastCacheFile = Utils.FindLastCacheFile(cacheDir, cacheFileNamePrefix, dateFromToRegexPattern, "yyyy_MM_dd", "_");
+
+            var currentDate = DateTime.Now.Date;
+            var firstDayOfTheYear = new DateTime(currentDate.Year, 1, 1);
+            var yesterday = currentDate.AddDays(-1);
+
+            // check if we have a cache file
+            DateTime from = default(DateTime);
+            DateTime to = default(DateTime);
+
+            // if the cache file object has values
+            if (!lastCacheFile.Equals(default(KeyValuePair<DateTime, string>)))
+            {
+                from = lastCacheFile.Key.Date;
+                to = yesterday;
+
+                // if the from date is today, then we already have an updated file so use cache
+                if (from.Equals(to))
+                {
+                    // use latest cache file (or force an update)
+                    return ReadBankStatement(lastCacheFile.Value);
+                }
+                else if (from != firstDayOfTheYear)
+                {
+                    // Download from the web
+                    string bankStatementFilePath = null;
+                    if ((bankStatementFilePath = DownloadBankStatement()) != null)
+                    {
+                        return ReadBankStatement(bankStatementFilePath);
+                    }
+                }
+            }
+            else
+            {
+                // find all from beginning of year until now
+                from = firstDayOfTheYear;
+                to = currentDate;
+            }
+
+            // get updated bank statement
+            string bankStatementFilePath2 = DownloadBankStatement();
+            return ReadBankStatement(bankStatementFilePath2);
+        }
+
         public static SkandiabankenBankStatement ReadBankStatement(string skandiabankenTransactionsFilePath)
         {
             var skandiabankenTransactions = new List<SkandiabankenTransaction>();
@@ -91,23 +141,19 @@ namespace AccountingRobot
             return bankStatment;
         }
 
-        public static bool DownloadBankStatement()
+        public static string DownloadBankStatement()
         {
             string cacheDir = ConfigurationManager.AppSettings["CacheDir"];
             string userDataDir = ConfigurationManager.AppSettings["UserDataDir"];
-
-            // C:\Users\pnerseth\Downloads\97132735232_2017_01_01-2017_12_27.xlsx
-            string downloadFolderPath = @"C:\Users\pnerseth\Downloads";
-
-            string sbankenMobilePhone = "90156615";
-            string sbankenBirthDate = "070374";
+            string sbankenMobilePhone = ConfigurationManager.AppSettings["SBankenMobilePhone"];
+            string sbankenBirthDate = ConfigurationManager.AppSettings["SBankenBirthDate"];
+            string cacheFileNamePrefix = ConfigurationManager.AppSettings["SBankenAccountNumber"];
+            string sbankenAccountId = ConfigurationManager.AppSettings["SBankenAccountId"];            
+            string downloadFolderPath = Environment.GetEnvironmentVariable("USERPROFILE") + @"\Downloads\";
 
             var currentDate = DateTime.Now.Date;
             var firstDayOfTheYear = new DateTime(currentDate.Year, 1, 1);
             var yesterday = currentDate.AddDays(-1);
-
-            //string sbankenCustomFromDate = string.Format("{0:dd.MM.yyyy}", firstDayOfTheYear);
-            //string sbankenCustomToDate = string.Format("{0:dd.MM.yyyy}", yesterday);
 
             string userDataArgument = string.Format("user-data-dir={0}", userDataDir);
 
@@ -159,69 +205,41 @@ namespace AccountingRobot
             }
             catch (WebDriverTimeoutException)
             {
-                Console.WriteLine("Timeout - Logged in to Skandiabanken to late. Stopping.");
-                return false;
+                Console.WriteLine("Timeout - Logged in to Skandiabanken too late. Stopping.");
+                return null;
             }
-
-            // go to account statement
-            driver.Navigate().GoToUrl("https://secure.sbanken.no/Home/AccountStatement?accountId=483c5027bafcf1d43e623a99d6a0e0e8");
-
-            // //*[@id="expanded-filters-link"]
-            // input SearchFilter_CustomFromDate (dd.mm.yyyyy)
-            // input SearchFilter_CustomToDate (dd.mm.yyyyy)
-            // submit value = Vis
-            /*
-            if (SeleniumUtils.IsElementPresent(driver, By.XPath("//input[@id='SearchFilter_CustomFromDate']"))
-                && SeleniumUtils.IsElementPresent(driver, By.XPath("//input[@id='SearchFilter_CustomToDate']")))
-            {
-                IWebElement customFromDate = driver.FindElement(By.XPath("//input[@id='SearchFilter_CustomFromDate']"));
-                IWebElement customToDate = driver.FindElement(By.XPath("//input[@id='SearchFilter_CustomToDate']"));
-
-                customFromDate.Clear();
-                customFromDate.SendKeys(sbankenCustomFromDate);
-
-                customToDate.Clear();
-                customToDate.SendKeys(sbankenCustomToDate);
-
-                // use birth date field to submit form
-                customToDate.Submit();
-
-                var waitLoginIFrame = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
-                waitLoginIFrame.Until(d => ((IJavaScriptExecutor)d).ExecuteScript("return document.readyState").Equals("complete"));
-            }
-            */
 
             // download account statement
-            string accountStatementDownload = string.Format("https://secure.sbanken.no/Home/AccountStatement/ViewExcel?AccountId=483c5027bafcf1d43e623a99d6a0e0e8&CustomFromDate={0:dd.MM.yyyy}&CustomToDate={1:dd.MM.yyyy}&FromDate=CustomPeriod&Incoming=", firstDayOfTheYear, yesterday);
+            string accountStatementDownload = string.Format("https://secure.sbanken.no/Home/AccountStatement/ViewExcel?AccountId={0}&CustomFromDate={1:dd.MM.yyyy}&CustomToDate={2:dd.MM.yyyy}&FromDate=CustomPeriod&Incoming=", sbankenAccountId, firstDayOfTheYear, yesterday);
             driver.Navigate().GoToUrl(accountStatementDownload);
 
             var waitExcel = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
             waitExcel.Until(d => ((IJavaScriptExecutor)d).ExecuteScript("return document.readyState").Equals("complete"));
 
-            string accountStatementFileName = string.Format("97132735232_{0:yyyy_MM_dd}-{1:yyyy_MM_dd}.xlsx", firstDayOfTheYear, yesterday);
-            string accountStatementFilePath = Path.Combine(downloadFolderPath, accountStatementFileName);
+            string accountStatementFileName = string.Format("{0}_{1:yyyy_MM_dd}-{2:yyyy_MM_dd}.xlsx", cacheFileNamePrefix, firstDayOfTheYear, yesterday);
+            string accountStatementDownloadFilePath = Path.Combine(downloadFolderPath, accountStatementFileName);
 
             // wait until file has downloaded
             for (var i = 0; i < 30; i++)
             {
-                if (File.Exists(accountStatementFilePath)) { break; }
+                if (File.Exists(accountStatementDownloadFilePath)) { break; }
                 Thread.Sleep(1000);
             }
-            var length = new FileInfo(accountStatementFilePath).Length;
+            var length = new FileInfo(accountStatementDownloadFilePath).Length;
             for (var i = 0; i < 30; i++)
             {
                 Thread.Sleep(1000);
-                var newLength = new FileInfo(accountStatementFilePath).Length;
+                var newLength = new FileInfo(accountStatementDownloadFilePath).Length;
                 if (newLength == length && length != 0) { break; }
                 length = newLength;
             }
             driver.Close();
 
             // determine path
-            Console.Out.WriteLine("Successfully downloaded skandiabanken account statement excel file {0}", accountStatementFilePath);
+            Console.Out.WriteLine("Successfully downloaded skandiabanken account statement excel file {0}", accountStatementDownloadFilePath);
 
             // moving file to right place
-            string destFilePath = Path.Combine(cacheDir, accountStatementFileName);
+            string accountStatementDestinationPath = Path.Combine(cacheDir, accountStatementFileName);
 
             // To copy a folder's contents to a new location:
             // Create a new target folder, if necessary.
@@ -231,9 +249,9 @@ namespace AccountingRobot
             }
 
             // Move file to another location
-            File.Move(accountStatementFilePath, destFilePath);
+            File.Move(accountStatementDownloadFilePath, accountStatementDestinationPath);
 
-            return true;
+            return accountStatementDestinationPath;
         }
     }
 
