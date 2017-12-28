@@ -14,6 +14,9 @@ namespace AccountingRobot
     {
         static void Main(string[] args)
         {
+            // download skandiabanken bank statement
+            Skandiabanken.DownloadBankStatement();
+
             // prepopulate lookup lists
             Console.Out.WriteLine("Prepopulating Lookup Lists ...");
 
