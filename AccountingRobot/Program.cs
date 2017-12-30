@@ -517,8 +517,8 @@ namespace AccountingRobot
             row.Cells("U", "V").Style.Fill.BackgroundColor = green;
 
             // set background color for investments, withdrawal and deposits
-            var lightBlue = XLColor.FromArgb(0xC5D9F1);
-            var lighterBlue = XLColor.FromArgb(0xEAF1FA);
+            var lightBlue = XLColor.FromArgb(0xEAF1FA);
+            var lighterBlue = XLColor.FromArgb(0xC5D9F1); 
             var blue = currentRow % 2 == 0 ? lightBlue : lighterBlue;
             row.Cells("AT", "AW").Style.Fill.BackgroundColor = blue;
 
