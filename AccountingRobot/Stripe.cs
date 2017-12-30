@@ -51,8 +51,11 @@ namespace AccountingRobot
             return allBalanceTransactions;
         }
 
-        public static List<StripeCharge> GetCharges(string stripeApiKey)
+        public static List<StripeCharge> GetCharges()
         {
+            // get stripe configuration parameters
+            string stripeApiKey = ConfigurationManager.AppSettings["StripeApiKey"];
+
             StripeConfiguration.SetApiKey(stripeApiKey);
 
             var chargeService = new StripeChargeService();
@@ -92,6 +95,7 @@ namespace AccountingRobot
             return allCharges;
         }
 
+        // Get all transactions with type payout from StripeBalanceService
         public static List<StripeTransaction> GetAllPayoutTransactions()
         {
             var stripeBalanceTransactions = Stripe.GetBalanceTransactions();
@@ -111,6 +115,7 @@ namespace AccountingRobot
             return stripePayoutsQuery;
         }
 
+        #region Charge Transactions (StripeChargeService)
         public static List<StripeTransaction> GetLatestStripeTransactions(bool forceUpdate = false)
         {
             // get stripe configuration parameters
@@ -273,19 +278,35 @@ namespace AccountingRobot
                     stripeTransaction.Created = charge.Created;
                     stripeTransaction.Paid = charge.Paid;
                     stripeTransaction.CustomerEmail = charge.Metadata["email"];
+                    stripeTransaction.OrderID = charge.Metadata["order_id"];
                     stripeTransaction.Amount = (decimal)charge.Amount / 100;
                     stripeTransaction.Net = (decimal)charge.BalanceTransaction.Net / 100;
                     stripeTransaction.Fee = (decimal)charge.BalanceTransaction.Fee / 100;
                     stripeTransaction.Currency = charge.Currency;
                     stripeTransaction.Description = charge.Description;
                     stripeTransaction.Status = charge.Status;
-
+                    decimal amountRefunded = (decimal)charge.AmountRefunded / 100;
+                    if (amountRefunded > 0)
+                    {
+                        // if anything has been refunded
+                        // don't add if amount refunded and amount is the same (full refund)
+                        if (stripeTransaction.Amount - amountRefunded == 0)
+                        {
+                            continue;
+                        } else
+                        {
+                            stripeTransaction.Amount = stripeTransaction.Amount - amountRefunded;
+                            stripeTransaction.Net = stripeTransaction.Net - amountRefunded;
+                        }                        
+                    } 
                     stripeTransactions.Add(stripeTransaction);
                 }
             }
             return stripeTransactions;
         }
+        #endregion
 
+        #region Payout Transactions (StripeBalanceService)
         public static List<StripeTransaction> GetLatestStripePayoutTransactions(bool forceUpdate = false)
         {
             // get stripe configuration parameters
@@ -456,5 +477,6 @@ namespace AccountingRobot
             }
             return stripeTransactions;
         }
+        #endregion
     }
 }

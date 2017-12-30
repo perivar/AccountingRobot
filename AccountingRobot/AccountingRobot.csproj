@@ -61,8 +61,8 @@
     <Reference Include="PayPalMerchantSDK, Version=2.16.250.0, Culture=neutral, PublicKeyToken=5b4afc1ccaef40fb, processorArchitecture=MSIL">
       <HintPath>..\packages\PayPalMerchantSDK.2.16.250\lib\net20\PayPalMerchantSDK.dll</HintPath>
     </Reference>
-    <Reference Include="Stripe.net, Version=11.9.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Stripe.net.11.9.0\lib\net45\Stripe.net.dll</HintPath>
+    <Reference Include="Stripe.net, Version=11.10.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Stripe.net.11.10.0\lib\net45\Stripe.net.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.AppContext, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
