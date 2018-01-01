@@ -58,10 +58,9 @@ namespace AccountingRobot
                 Console.Out.WriteLine("No existing accounting spreadsheets found - creating ...");
 
                 // export to excel file
-                var currentDate = DateTime.Now.Date;
-                var currentYear = currentDate.Year;
-                var from = new DateTime(currentYear, 1, 1);
-                var to = currentDate;
+                var date = new Date();
+                var from = date.FirstDayOfTheYear;
+                var to = date.CurrentDate;
 
                 string accountingFileName = string.Format("{0}-{1:yyyy-MM-dd}-{2:yyyy-MM-dd}.xlsx", accountingFileNamePrefix, from, to);
                 string filePath = Path.Combine(accountingFileDir, accountingFileName);
@@ -729,10 +728,9 @@ namespace AccountingRobot
         {
             var accountingList = new List<AccountingItem>();
 
-            var currentDate = DateTime.Now.Date;
-            var currentYear = currentDate.Year;
-            var from = new DateTime(currentYear, 1, 1);
-            var to = currentDate;
+            var date = new Date();
+            var from = date.FirstDayOfTheYear;
+            var to = date.CurrentDate;
 
             // prepopulate some lookup lists
             var stripePayoutTransactions = Stripe.GetLatestStripePayoutTransactions();

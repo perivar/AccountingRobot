@@ -28,9 +28,9 @@ namespace AliOrderScraper
 
             var lastCacheFile = Utils.FindLastCacheFile(cacheDir, cacheFileNamePrefix);
 
-            var currentDate = DateTime.Now.Date;
-            var firstDayOfTheYear = new DateTime(currentDate.Year, 1, 1);
-            var lastDayOfTheYear = new DateTime(currentDate.Year, 12, 31);
+            var date = new Date();
+            var currentDate = date.CurrentDate;
+            var firstDayOfTheYear = date.FirstDayOfTheYear;
 
             // check if we have a cache file
             DateTime from = default(DateTime);

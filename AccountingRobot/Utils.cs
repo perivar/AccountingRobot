@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 namespace AccountingRobot
 {
     public static class Utils
-    {
+    { 
         public static bool CaseInsensitiveContains(this string text, string value, StringComparison stringComparison = StringComparison.CurrentCultureIgnoreCase)
         {
             return text.IndexOf(value, stringComparison) >= 0;
@@ -77,6 +77,41 @@ namespace AccountingRobot
             {
                 return null;
             }
+        }
+    }
+
+    public class Date
+    {
+        DateTime currentDate;
+        DateTime yesterday;
+        DateTime firstDayOfTheYear;
+        DateTime lastDayOfTheYear;
+
+        public DateTime CurrentDate {
+            get { return currentDate; }
+        }
+
+        public DateTime Yesterday
+        {
+            get { return yesterday; }
+        }
+
+        public DateTime FirstDayOfTheYear
+        {
+            get { return firstDayOfTheYear; }
+        }
+
+        public DateTime LastDayOfTheYear
+        {
+            get { return lastDayOfTheYear; }
+        }
+
+        public Date()
+        {
+            currentDate = DateTime.Now.Date;
+            yesterday = currentDate.AddDays(-1);
+            firstDayOfTheYear = new DateTime(currentDate.Year, 1, 1);
+            lastDayOfTheYear = new DateTime(currentDate.Year, 12, 31);
         }
     }
 }

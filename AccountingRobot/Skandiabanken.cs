@@ -20,9 +20,10 @@ namespace AccountingRobot
             string dateFromToRegexPattern = @"(\d{4}_\d{2}_\d{2})\-(\d{4}_\d{2}_\d{2})\.xlsx$";
             var lastCacheFile = Utils.FindLastCacheFile(cacheDir, cacheFileNamePrefix, dateFromToRegexPattern, "yyyy_MM_dd", "_");
 
-            var currentDate = DateTime.Now.Date;
-            var firstDayOfTheYear = new DateTime(currentDate.Year, 1, 1);
-            var yesterday = currentDate.AddDays(-1);
+            var date = new Date();
+            var currentDate = date.CurrentDate;
+            var firstDayOfTheYear = date.FirstDayOfTheYear;
+            var yesterday = date.Yesterday;
 
             // check if we have a cache file
             DateTime from = default(DateTime);
@@ -37,29 +38,24 @@ namespace AccountingRobot
                 // if the from date is today, then we already have an updated file so use cache
                 if (from.Equals(to))
                 {
-                    // use latest cache file (or force an update)
+                    // use latest cache file
                     return ReadBankStatement(lastCacheFile.Value);
                 }
-                else if (from != firstDayOfTheYear)
-                {
-                    // Download from the web
-                    string bankStatementFilePath = null;
-                    if ((bankStatementFilePath = DownloadBankStatement()) != null)
-                    {
-                        return ReadBankStatement(bankStatementFilePath);
-                    }
-                }
             }
-            else
+
+            // Download all from beginning of year until now
+            from = firstDayOfTheYear;
+            to = yesterday;
+
+            // check special case if yesterday is last year
+            if (from.Year != to.Year)
             {
-                // find all from beginning of year until now
-                from = firstDayOfTheYear;
-                to = currentDate;
+                from = from.AddYears(-1);
             }
 
             // get updated bank statement
-            string bankStatementFilePath2 = DownloadBankStatement();
-            return ReadBankStatement(bankStatementFilePath2);
+            string bankStatementFilePath = DownloadBankStatement(from, to);
+            return ReadBankStatement(bankStatementFilePath);
         }
 
         public static SkandiabankenBankStatement ReadBankStatement(string skandiabankenTransactionsFilePath)
@@ -120,8 +116,8 @@ namespace AccountingRobot
             var outgoingBalanceCell = ws.Cell(1, lastCellLastColumn.Address.ColumnNumber);
             decimal incomingBalance = incomingBalanceCell.GetValue<decimal>();
             decimal outgoingBalance = outgoingBalanceCell.GetValue<decimal>();
-            var incomingBalanceLabelCell = ws.Cell(lastCellLastColumn.Address.RowNumber + 2, lastCellLastColumn.Address.ColumnNumber-2);
-            var outgoingBalanceLabelCell = ws.Cell(1, lastCellLastColumn.Address.ColumnNumber-2);
+            var incomingBalanceLabelCell = ws.Cell(lastCellLastColumn.Address.RowNumber + 2, lastCellLastColumn.Address.ColumnNumber - 2);
+            var outgoingBalanceLabelCell = ws.Cell(1, lastCellLastColumn.Address.ColumnNumber - 2);
             var incomingBalanceLabel = incomingBalanceLabelCell.GetString();
             var outgoingBalanceLabel = outgoingBalanceLabelCell.GetString();
             var incomingBalanceDate = ExcelUtils.GetDateFromBankStatementString(incomingBalanceLabel);
@@ -141,19 +137,15 @@ namespace AccountingRobot
             return bankStatment;
         }
 
-        public static string DownloadBankStatement()
+        public static string DownloadBankStatement(DateTime from, DateTime to)
         {
             string cacheDir = ConfigurationManager.AppSettings["CacheDir"];
             string userDataDir = ConfigurationManager.AppSettings["UserDataDir"];
             string sbankenMobilePhone = ConfigurationManager.AppSettings["SBankenMobilePhone"];
             string sbankenBirthDate = ConfigurationManager.AppSettings["SBankenBirthDate"];
             string cacheFileNamePrefix = ConfigurationManager.AppSettings["SBankenAccountNumber"];
-            string sbankenAccountId = ConfigurationManager.AppSettings["SBankenAccountId"];            
+            string sbankenAccountId = ConfigurationManager.AppSettings["SBankenAccountId"];
             string downloadFolderPath = Environment.GetEnvironmentVariable("USERPROFILE") + @"\Downloads\";
-
-            var currentDate = DateTime.Now.Date;
-            var firstDayOfTheYear = new DateTime(currentDate.Year, 1, 1);
-            var yesterday = currentDate.AddDays(-1);
 
             string userDataArgument = string.Format("user-data-dir={0}", userDataDir);
 
@@ -210,13 +202,13 @@ namespace AccountingRobot
             }
 
             // download account statement
-            string accountStatementDownload = string.Format("https://secure.sbanken.no/Home/AccountStatement/ViewExcel?AccountId={0}&CustomFromDate={1:dd.MM.yyyy}&CustomToDate={2:dd.MM.yyyy}&FromDate=CustomPeriod&Incoming=", sbankenAccountId, firstDayOfTheYear, yesterday);
+            string accountStatementDownload = string.Format("https://secure.sbanken.no/Home/AccountStatement/ViewExcel?AccountId={0}&CustomFromDate={1:dd.MM.yyyy}&CustomToDate={2:dd.MM.yyyy}&FromDate=CustomPeriod&Incoming=", sbankenAccountId, from, to);
             driver.Navigate().GoToUrl(accountStatementDownload);
 
             var waitExcel = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
             waitExcel.Until(d => ((IJavaScriptExecutor)d).ExecuteScript("return document.readyState").Equals("complete"));
 
-            string accountStatementFileName = string.Format("{0}_{1:yyyy_MM_dd}-{2:yyyy_MM_dd}.xlsx", cacheFileNamePrefix, firstDayOfTheYear, yesterday);
+            string accountStatementFileName = string.Format("{0}_{1:yyyy_MM_dd}-{2:yyyy_MM_dd}.xlsx", cacheFileNamePrefix, from, to);
             string accountStatementDownloadFilePath = Path.Combine(downloadFolderPath, accountStatementFileName);
 
             // wait until file has downloaded
