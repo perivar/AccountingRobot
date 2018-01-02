@@ -70,6 +70,14 @@ namespace AccountingRobot
             var lastCellFirstColumn = startColumn.LastCellUsed();
             var lastCellLastColumn = lastCellFirstColumn.WorksheetRow().AsRange().LastColumnUsed().LastCellUsed();
 
+            // check edge case where first cell and last cell is the same (i.e. the spreadsheet contain no data)
+            if (firstCellFirstColumn == lastCellFirstColumn)
+            {
+                // the spreadsheet contain no data
+                Console.Out.WriteLine("ERROR! Bank statement contains no data.");
+                return null;
+            }
+
             // Get a range with the transaction data
             var transactionRange = ws.Range(firstCellFirstColumn, lastCellLastColumn).RangeUsed();
 

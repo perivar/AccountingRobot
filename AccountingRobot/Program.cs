@@ -7,6 +7,7 @@ using OberloScraper;
 using ClosedXML.Excel;
 using System.Data;
 using System.IO;
+using System.Globalization;
 
 namespace AccountingRobot
 {
@@ -728,7 +729,9 @@ namespace AccountingRobot
         {
             var accountingList = new List<AccountingItem>();
 
-            var date = new Date();
+            if (skandiabankenBankStatement == null) return accountingList;
+
+                var date = new Date();
             var from = date.FirstDayOfTheYear;
             var to = date.CurrentDate;
 
@@ -989,7 +992,12 @@ namespace AccountingRobot
             string shopifyAPIKey = ConfigurationManager.AppSettings["ShopifyAPIKey"];
             string shopifyAPIPassword = ConfigurationManager.AppSettings["ShopifyAPIPassword"];
 
-            var shopifyOrders = Shopify.ReadShopifyOrders(shopifyDomain, shopifyAPIKey, shopifyAPIPassword);
+            // add date filter, created_at_min and created_at_max
+            var date = new Date();
+            var from = date.FirstDayOfTheYear;
+            var to = date.CurrentDate;
+            string querySuffix = string.Format(CultureInfo.InvariantCulture, "status=any&created_at_min={0:yyyy-MM-ddThh:mm:sszzz}&created_at_max={1:yyyy-MM-ddThh:mm:sszzz}", from, to);
+            var shopifyOrders = Shopify.ReadShopifyOrders(shopifyDomain, shopifyAPIKey, shopifyAPIPassword, querySuffix);
             Console.Out.WriteLine("Successfully read all Shopify orders ...");
 
             Console.Out.WriteLine("Processing Shopify orders started ...");
