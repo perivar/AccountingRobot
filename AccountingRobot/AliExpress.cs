@@ -43,7 +43,7 @@ namespace AliOrderScraper
                 to = currentDate;
 
                 // if the from date is today, then we already have an updated file so use cache
-                if (from.Equals(to))
+                if (from.Date.Equals(to.Date))
                 {
                     // use latest cache file (or force an update)
                     return GetAliExpressOrders(lastCacheFile.Value, userDataDir, aliExpressUsername, aliExpressPassword, from, forceUpdate);
@@ -94,7 +94,8 @@ namespace AliOrderScraper
         public static List<AliExpressOrder> GetAliExpressOrders(string cacheFilePath, string userDataDir, string aliExpressUsername, string aliExpressPassword, DateTime from, bool forceUpdate = false)
         {
             var cachedAliExpressOrders = Utils.ReadCacheFile<AliExpressOrder>(cacheFilePath, forceUpdate);
-            if (cachedAliExpressOrders != null && cachedAliExpressOrders.Count() > 0)
+            //if (cachedAliExpressOrders != null && cachedAliExpressOrders.Count() > 0)
+            if (cachedAliExpressOrders != null)
             {
                 Console.Out.WriteLine("Using cache file {0}.", cacheFilePath);
                 return cachedAliExpressOrders;

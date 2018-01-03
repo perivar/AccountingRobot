@@ -518,7 +518,7 @@ namespace AccountingRobot
 
             // set background color for investments, withdrawal and deposits
             var lightBlue = XLColor.FromArgb(0xEAF1FA);
-            var lighterBlue = XLColor.FromArgb(0xC5D9F1); 
+            var lighterBlue = XLColor.FromArgb(0xC5D9F1);
             var blue = currentRow % 2 == 0 ? lightBlue : lighterBlue;
             row.Cells("AT", "AW").Style.Fill.BackgroundColor = blue;
 
@@ -731,7 +731,7 @@ namespace AccountingRobot
 
             if (skandiabankenBankStatement == null) return accountingList;
 
-                var date = new Date();
+            var date = new Date();
             var from = date.FirstDayOfTheYear;
             var to = date.CurrentDate;
 
@@ -975,6 +975,13 @@ namespace AccountingRobot
                         case SkandiabankenTransaction.AccountingTypeEnum.IncomeReturn:
                             accountingItem.CostForReselling = -skandiabankenTransaction.AccountChange;
                             break;
+                        case SkandiabankenTransaction.AccountingTypeEnum.CostOfInvoice:
+                            if (skandiabankenTransaction.Text.CaseInsensitiveContains("Merverdiavgift"))
+                            {
+                                accountingItem.VATPurchase = -skandiabankenTransaction.AccountChange;
+                                accountingItem.ErrorMessage = "Please add VAT payment period";
+                            }
+                            break;
                     }
                 }
 
@@ -994,7 +1001,7 @@ namespace AccountingRobot
 
             // add date filter, created_at_min and created_at_max
             var date = new Date();
-            var from = date.FirstDayOfTheYear;
+            var from = date.FirstDayOfTheYear; //.AddDays(-30); // always go back a month
             var to = date.CurrentDate;
             string querySuffix = string.Format(CultureInfo.InvariantCulture, "status=any&created_at_min={0:yyyy-MM-ddThh:mm:sszzz}&created_at_max={1:yyyy-MM-ddThh:mm:sszzz}", from, to);
             var shopifyOrders = Shopify.ReadShopifyOrders(shopifyDomain, shopifyAPIKey, shopifyAPIPassword, querySuffix);
@@ -1166,7 +1173,7 @@ namespace AccountingRobot
         {
             // set start and stop date
             var startDate = skandiabankenTransaction.ExternalPurchaseDate.AddDays(-4);
-            var endDate = skandiabankenTransaction.ExternalPurchaseDate;
+            var endDate = skandiabankenTransaction.ExternalPurchaseDate.AddDays(0);
 
             // lookup in AliExpress purchase list
             // matching ordertime and orderamount

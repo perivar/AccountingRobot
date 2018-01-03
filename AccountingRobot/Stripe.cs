@@ -140,7 +140,7 @@ namespace AccountingRobot
                 to = currentDate;
 
                 // if the from date is today, then we already have an updated file so use cache
-                if (from.Equals(to))
+                if (from.Date.Equals(to.Date))
                 {
                     // use latest cache file (or force an update)
                     return GetStripeTransactions(lastCacheFile.Value, stripeApiKey, from, to, forceUpdate);
@@ -191,7 +191,8 @@ namespace AccountingRobot
         static List<StripeTransaction> GetStripeTransactions(string cacheFilePath, string stripeApiKey, DateTime from, DateTime to, bool forceUpdate = false)
         {
             var cachedStripeTransactions = Utils.ReadCacheFile<StripeTransaction>(cacheFilePath, forceUpdate);
-            if (cachedStripeTransactions != null && cachedStripeTransactions.Count() > 0)
+            //if (cachedStripeTransactions != null && cachedStripeTransactions.Count() > 0)
+            if (cachedStripeTransactions != null)
             {
                 Console.Out.WriteLine("Using cache file {0}.", cacheFilePath);
                 return cachedStripeTransactions;
@@ -331,7 +332,7 @@ namespace AccountingRobot
                 to = currentDate;
 
                 // if the from date is today, then we already have an updated file so use cache
-                if (from.Equals(to))
+                if (from.Date.Equals(to.Date))
                 {
                     // use latest cache file (or force an update)
                     return GetStripePayoutTransactions(lastCacheFile.Value, stripeApiKey, from, to, forceUpdate);
@@ -382,7 +383,8 @@ namespace AccountingRobot
         static List<StripeTransaction> GetStripePayoutTransactions(string cacheFilePath, string stripeApiKey, DateTime from, DateTime to, bool forceUpdate = false)
         {
             var cachedStripeTransactions = Utils.ReadCacheFile<StripeTransaction>(cacheFilePath, forceUpdate);
-            if (cachedStripeTransactions != null && cachedStripeTransactions.Count() > 0)
+            //if (cachedStripeTransactions != null && cachedStripeTransactions.Count() > 0)
+            if (cachedStripeTransactions != null)
             {
                 Console.Out.WriteLine("Using cache file {0}.", cacheFilePath);
                 return cachedStripeTransactions;

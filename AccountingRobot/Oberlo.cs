@@ -40,7 +40,7 @@ namespace OberloScraper
                 to = currentDate;
 
                 // if the from date is today, then we already have an updated file so use cache
-                if (from.Equals(to))
+                if (from.Date.Equals(to.Date))
                 {
                     // use latest cache file (or force an update)
                     return GetOberloOrders(lastCacheFile.Value, userDataDir, oberloUsername, oberloPassword, from, to, forceUpdate);
@@ -91,7 +91,8 @@ namespace OberloScraper
         public static List<OberloOrder> GetOberloOrders(string cacheFilePath, string userDataDir, string oberloUsername, string oberloPassword, DateTime from, DateTime to, bool forceUpdate = false)
         {
             var cachedOberloOrders = Utils.ReadCacheFile<OberloOrder>(cacheFilePath, forceUpdate);
-            if (cachedOberloOrders != null && cachedOberloOrders.Count() > 0)
+            //if (cachedOberloOrders != null && cachedOberloOrders.Count() > 0)
+            if (cachedOberloOrders != null)
             {
                 Console.Out.WriteLine("Using cache file {0}.", cacheFilePath);
                 return cachedOberloOrders;

@@ -77,7 +77,7 @@ namespace AccountingRobot
                 to = currentDate;
 
                 // if the from date is today, then we already have an updated file so use cache
-                if (from.Equals(to))
+                if (from.Date.Equals(to.Date))
                 {
                     // use latest cache file (or force an update)
                     return GetPayPalTransactions(lastCacheFile.Value, payPalApiUsername, payPalApiPassword, payPalApiSignature, from, to, forceUpdate);
@@ -128,7 +128,8 @@ namespace AccountingRobot
         static List<PayPalTransaction> GetPayPalTransactions(string cacheFilePath, string payPalApiUsername, string payPalApiPassword, string payPalApiSignature, DateTime from, DateTime to, bool forceUpdate = false)
         {
             var cachedPayPalTransactions = Utils.ReadCacheFile<PayPalTransaction>(cacheFilePath, forceUpdate);
-            if (cachedPayPalTransactions != null && cachedPayPalTransactions.Count() > 0)
+            //if (cachedPayPalTransactions != null && cachedPayPalTransactions.Count() > 0)
+            if (cachedPayPalTransactions != null)
             {
                 Console.Out.WriteLine("Using cache file {0}.", cacheFilePath);
                 return cachedPayPalTransactions;

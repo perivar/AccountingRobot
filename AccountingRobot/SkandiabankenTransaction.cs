@@ -108,7 +108,7 @@ namespace AccountingRobot
                     break;
                 case AccountingTypeEnum.CostOfTryouts:
                     accountingTypeString = "KOST PRØVE";
-                    break;                    
+                    break;
                 case AccountingTypeEnum.CostUnknown:
                     accountingTypeString = "KOST UKJENT";
                     break;
@@ -166,8 +166,13 @@ namespace AccountingRobot
                 var vendor = matchPurchase.Groups[5].ToString();
                 var exchangeRate = matchPurchase.Groups[7].ToString();
 
-                // fix date
+                // parse date
                 int year = TransactionDate.Year;
+                // fix edge case where year is likely last year (before 4th of January)
+                if (TransactionDate < new DateTime(year, 4, 1))
+                {
+                    year--;
+                }
                 var dateString = string.Format("{0}.{1}", dayAndMonth, year);
                 DateTime purchaseDate = DateTime.ParseExact(dateString, "dd.MM.yyyy", CultureInfo.InvariantCulture);
 

@@ -36,7 +36,7 @@ namespace AccountingRobot
                 to = yesterday;
 
                 // if the from date is today, then we already have an updated file so use cache
-                if (from.Equals(to))
+                if (from.Date.Equals(to.Date))
                 {
                     // use latest cache file
                     return ReadBankStatement(lastCacheFile.Value);
