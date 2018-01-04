@@ -6,7 +6,7 @@ using AliOrderScraper;
 
 namespace AccountingRobot
 {
-    public class AliExpressFactory : CachedValue<AliExpressOrder>
+    public class AliExpressFactory : CachedList<AliExpressOrder>
     {
         string userDataDir = ConfigurationManager.AppSettings["UserDataDir"];
         string cacheDir = ConfigurationManager.AppSettings["CacheDir"];
@@ -39,9 +39,10 @@ namespace AccountingRobot
             return updatedAliExpressOrders;
         }
 
-        public override List<AliExpressOrder> GetLatest(string filePath, DateTime from, DateTime to, bool forceUpdate)
+        public override List<AliExpressOrder> GetList(DateTime from, DateTime to)
         {
-            return AliExpress.GetAliExpressOrders(filePath, userDataDir, aliExpressUsername, aliExpressPassword, from, forceUpdate);
+            Console.Out.WriteLine("Finding AliExpress Orders from {0:yyyy-MM-dd} to {1:yyyy-MM-dd}", from, to);
+            return AliExpress.ScrapeAliExpressOrders(userDataDir, aliExpressUsername, aliExpressPassword, from);
         }
     }
 }

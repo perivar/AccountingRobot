@@ -86,6 +86,19 @@ namespace AccountingRobot
             }
         }
 
+        public static void WriteCacheFile<T>(string filePath, List<T> values)
+        {
+            using (var sw = new StreamWriter(filePath))
+            {
+                var csvWriter = new CsvWriter(sw);
+                csvWriter.Configuration.Delimiter = ",";
+                csvWriter.Configuration.HasHeaderRecord = true;
+                csvWriter.Configuration.CultureInfo = CultureInfo.InvariantCulture;
+
+                csvWriter.WriteRecords(values);
+            }
+        }
+
         /// <summary>
         /// Gets the 12:00:00 instance of a DateTime
         /// </summary>

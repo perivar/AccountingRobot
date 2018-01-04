@@ -4,121 +4,15 @@ using System.Text.RegularExpressions;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
-using System.IO;
-using CsvHelper;
-using System.Configuration;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using AccountingRobot;
-using OpenQA.Selenium.PhantomJS;
 
 namespace AliOrderScraper
 {
     public static class AliExpress
     {
-        public static List<AliExpressOrder> GetLatestAliExpressOrders(bool forceUpdate = false)
-        {
-            string userDataDir = ConfigurationManager.AppSettings["UserDataDir"];
-            string cacheDir = ConfigurationManager.AppSettings["CacheDir"];
-            string aliExpressUsername = ConfigurationManager.AppSettings["AliExpressUsername"];
-            string aliExpressPassword = ConfigurationManager.AppSettings["AliExpressPassword"];
-
-            string cacheFileNamePrefix = "AliExpress Orders";
-
-            var lastCacheFileInfo = Utils.FindLastCacheFile(cacheDir, cacheFileNamePrefix);
-
-            var date = new Date();
-            var currentDate = date.CurrentDate;
-            var firstDayOfTheYear = date.FirstDayOfTheYear;
-
-            // check if we have a cache file
-            DateTime from = default(DateTime);
-            DateTime to = default(DateTime);
-
-            // if the cache file object has values
-            if (!lastCacheFileInfo.Equals(default(FileDate)))
-            {
-                from = lastCacheFileInfo.To;
-                to = currentDate;
-
-                // if the from date is today, then we already have an updated file so use cache
-                if (from.Date.Equals(to.Date))
-                {
-                    // use latest cache file (or force an update)
-                    return GetAliExpressOrders(lastCacheFileInfo.FilePath, userDataDir, aliExpressUsername, aliExpressPassword, from, forceUpdate);
-                }
-                else if (from != firstDayOfTheYear)
-                {
-                    // we have to combine two files:
-                    // the original cache file and the new transactions file
-                    Console.Out.WriteLine("Finding AliExpress Orders from {0:yyyy-MM-dd} to {1:yyyy-MM-dd}", from, to);
-                    var newAliExpressOrders = ScrapeAliExpressOrders(userDataDir, aliExpressUsername, aliExpressPassword, from);
-                    var originalAliExpressOrders = Utils.ReadCacheFile<AliExpressOrder>(lastCacheFileInfo.FilePath);
-
-                    // copy all the original AliExpress orders into a new file, except entries that are 
-                    // from the from date or newer
-                    var updatedAliExpressOrders = originalAliExpressOrders.Where(p => p.OrderTime < from).ToList();
-
-                    // and add the new orders to beginning of list
-                    updatedAliExpressOrders.InsertRange(0, newAliExpressOrders);
-
-                    // and store to new file
-                    string newCacheFilePath = Path.Combine(cacheDir, string.Format("{0}-{1:yyyy-MM-dd}-{2:yyyy-MM-dd}.csv", cacheFileNamePrefix, firstDayOfTheYear, to));
-                    using (var sw = new StreamWriter(newCacheFilePath))
-                    {
-                        var csvWriter = new CsvWriter(sw);
-                        csvWriter.Configuration.Delimiter = ",";
-                        csvWriter.Configuration.HasHeaderRecord = true;
-                        csvWriter.Configuration.CultureInfo = CultureInfo.InvariantCulture;
-
-                        csvWriter.WriteRecords(updatedAliExpressOrders);
-                    }
-
-                    Console.Out.WriteLine("Successfully wrote file to {0}", newCacheFilePath);
-                    return updatedAliExpressOrders;
-                }
-            }
-            else
-            {
-                // find all from beginning of year until now
-                from = firstDayOfTheYear;
-                to = currentDate;
-            }
-
-            // get updated transactions (or from cache file if update is forced)
-            string cacheFilePath = Path.Combine(cacheDir, string.Format("{0}-{1:yyyy-MM-dd}-{2:yyyy-MM-dd}.csv", cacheFileNamePrefix, from, to));
-            return GetAliExpressOrders(cacheFilePath, userDataDir, aliExpressUsername, aliExpressPassword, from);
-        }
-
-        public static List<AliExpressOrder> GetAliExpressOrders(string cacheFilePath, string userDataDir, string aliExpressUsername, string aliExpressPassword, DateTime from, bool forceUpdate = false)
-        {
-            var cachedAliExpressOrders = Utils.ReadCacheFile<AliExpressOrder>(cacheFilePath, forceUpdate);
-            //if (cachedAliExpressOrders != null && cachedAliExpressOrders.Count() > 0)
-            if (cachedAliExpressOrders != null)
-            {
-                Console.Out.WriteLine("Using cache file {0}.", cacheFilePath);
-                return cachedAliExpressOrders;
-            }
-            else
-            {
-                var AliExpressOrders = ScrapeAliExpressOrders(userDataDir, aliExpressUsername, aliExpressPassword, from);
-
-                using (var sw = new StreamWriter(cacheFilePath))
-                {
-                    var csvWriter = new CsvWriter(sw);
-                    csvWriter.Configuration.Delimiter = ",";
-                    csvWriter.Configuration.HasHeaderRecord = true;
-                    csvWriter.Configuration.CultureInfo = CultureInfo.InvariantCulture;
-
-                    csvWriter.WriteRecords(AliExpressOrders);
-                }
-
-                Console.Out.WriteLine("Successfully wrote file to {0}", cacheFilePath);
-                return AliExpressOrders;
-            }
-        }
-
         public static List<AliExpressOrder> ScrapeAliExpressOrders(string userDataDir, string aliExpressUsername, string aliExpressPassword, DateTime from)
         {
             var aliExpressOrders = new List<AliExpressOrder>();

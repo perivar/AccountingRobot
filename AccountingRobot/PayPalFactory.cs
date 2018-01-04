@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace AccountingRobot
 {
-    public class PayPalFactory : CachedValue<PayPalTransaction>
+    public class PayPalFactory : CachedList<PayPalTransaction>
     {
         // get paypal configuration parameters
         string payPalApiUsername = ConfigurationManager.AppSettings["PayPalApiUsername"];
@@ -38,9 +38,10 @@ namespace AccountingRobot
             return updatedPayPalTransactions;
         }
 
-        public override List<PayPalTransaction> GetLatest(string filePath, DateTime from, DateTime to, bool forceUpdate)
+        public override List<PayPalTransaction> GetList(DateTime from, DateTime to)
         {
-            return Paypal.GetPayPalTransactions(filePath, payPalApiUsername, payPalApiPassword, payPalApiSignature, from, to, forceUpdate);
+            Console.Out.WriteLine("Finding PayPal transactions from {0:yyyy-MM-dd} to {1:yyyy-MM-dd}", from, to);
+            return Paypal.GetPayPalTransactions(payPalApiUsername, payPalApiPassword, payPalApiSignature, from, to);
         }
     }
 }

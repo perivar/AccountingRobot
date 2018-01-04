@@ -38,7 +38,7 @@ namespace VerifyTool
 
         static void CheckPayPal(string filePath)
         {
-            var payPalTransactions = Paypal.GetLatestPaypalTransactions();
+            var payPalTransactions = PayPalFactory.Instance.GetLatest();
             //Console.Out.WriteLine("Successfully read PayPal transactions ...");
 
             var existingAccountingItems = GetSpreadsheet(filePath);
@@ -83,10 +83,10 @@ namespace VerifyTool
 
         static void CheckStripe(string filePath)
         {
-            var stripeTransactions = Stripe.GetLatestStripeChargeTransactions();
+            var stripeTransactions = StripeChargeFactory.Instance.GetLatest();
             //Console.Out.WriteLine("Successfully read Stripe transactions ...");
 
-            var stripePayoutTransactions = Stripe.GetLatestStripePayoutTransactions();
+            var stripePayoutTransactions = StripePayoutFactory.Instance.GetLatest();
             //Console.Out.WriteLine("Successfully read Stripe payout transactions ...");
 
             // combine to one list

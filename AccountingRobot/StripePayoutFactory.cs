@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace AccountingRobot
 {
-    public class StripePayoutFactory : CachedValue<StripeTransaction>
+    public class StripePayoutFactory : CachedList<StripeTransaction>
     {
         // get stripe configuration parameters
         string stripeApiKey = ConfigurationManager.AppSettings["StripeApiKey"];
@@ -36,9 +36,10 @@ namespace AccountingRobot
             return updatedStripePayoutTransactions;
         }
 
-        public override List<StripeTransaction> GetLatest(string filePath, DateTime from, DateTime to, bool forceUpdate)
+        public override List<StripeTransaction> GetList(DateTime from, DateTime to)
         {
-            return Stripe.GetStripePayoutTransactions(filePath, stripeApiKey, from, to, forceUpdate);
+            Console.Out.WriteLine("Finding Stripe payout transactions from {0:yyyy-MM-dd} to {1:yyyy-MM-dd}", from, to);
+            return Stripe.GetStripePayoutTransactions(stripeApiKey, from, to);
         }
     }
 }

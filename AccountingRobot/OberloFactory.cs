@@ -6,7 +6,7 @@ using OberloScraper;
 
 namespace AccountingRobot
 {
-    public class OberloFactory : CachedValue<OberloOrder>
+    public class OberloFactory : CachedList<OberloOrder>
     {
         // get oberlo configuration parameters
         string userDataDir = ConfigurationManager.AppSettings["UserDataDir"];
@@ -39,9 +39,10 @@ namespace AccountingRobot
             return updatedOberloOrders;
         }
 
-        public override List<OberloOrder> GetLatest(string filePath, DateTime from, DateTime to, bool forceUpdate)
+        public override List<OberloOrder> GetList(DateTime from, DateTime to)
         {
-            return Oberlo.GetOberloOrders(filePath, userDataDir, oberloUsername, oberloPassword, from, to, forceUpdate);
+            Console.Out.WriteLine("Finding Oberlo Orders from {0:yyyy-MM-dd} to {1:yyyy-MM-dd}", from, to);
+            return Oberlo.ScrapeOberloOrders(userDataDir, oberloUsername, oberloPassword, from, to);
         }
     }
 }

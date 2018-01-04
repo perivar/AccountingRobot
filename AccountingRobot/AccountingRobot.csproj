@@ -147,7 +147,7 @@
     <Compile Include="AliExpress.cs" />
     <Compile Include="AliExpressOrder.cs" />
     <Compile Include="AliExpressFactory.cs" />
-    <Compile Include="CachedValue.cs" />
+    <Compile Include="CachedList.cs" />
     <Compile Include="ExcelUtils.cs" />
     <Compile Include="Oberlo.cs" />
     <Compile Include="OberloFactory.cs" />

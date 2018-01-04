@@ -7,7 +7,7 @@ using System.IO;
 
 namespace AccountingRobot
 {
-    public abstract class CachedValue<T>
+    public abstract class CachedList<T>
     {
         protected abstract string CacheFileNamePrefix { get; }
 
@@ -35,7 +35,7 @@ namespace AccountingRobot
                 if (from.Date.Equals(to.Date))
                 {
                     // use latest cache file (or force an update)
-                    return GetLatest(lastCacheFileInfo.FilePath, from, to, forceUpdate);
+                    return GetList(lastCacheFileInfo.FilePath, from, to, forceUpdate);
                 }
                 else if (from != firstDayOfTheYear)
                 {
@@ -44,16 +44,7 @@ namespace AccountingRobot
 
                     // and store to new file
                     string newCacheFilePath = Path.Combine(cacheDir, string.Format("{0}-{1:yyyy-MM-dd}-{2:yyyy-MM-dd}.csv", CacheFileNamePrefix, firstDayOfTheYear, to));
-                    using (var sw = new StreamWriter(newCacheFilePath))
-                    {
-                        var csvWriter = new CsvWriter(sw);
-                        csvWriter.Configuration.Delimiter = ",";
-                        csvWriter.Configuration.HasHeaderRecord = true;
-                        csvWriter.Configuration.CultureInfo = CultureInfo.InvariantCulture;
-
-                        csvWriter.WriteRecords(updatedValues);
-                    }
-
+                    Utils.WriteCacheFile(newCacheFilePath, updatedValues);
                     Console.Out.WriteLine("Successfully wrote file to {0}", newCacheFilePath);
                     return updatedValues;
                 }
@@ -65,12 +56,30 @@ namespace AccountingRobot
                 to = currentDate;
             }
 
-            // get updated transactions (or from cache file if update is forced)
+            // get updated transactions (or from cache file if update is not forced)
             string cacheFilePath = Path.Combine(cacheDir, string.Format("{0}-{1:yyyy-MM-dd}-{2:yyyy-MM-dd}.csv", CacheFileNamePrefix, from, to));
-            return GetLatest(cacheFilePath, from, to, forceUpdate);
+            return GetList(cacheFilePath, from, to, forceUpdate);
         }
 
-        public abstract List<T> GetLatest(string filePath, DateTime from, DateTime to, bool forceUpdate);
+        public List<T> GetList(string cacheFilePath, DateTime from, DateTime to, bool forceUpdate)
+        {
+            var cachedList = Utils.ReadCacheFile<T>(cacheFilePath, forceUpdate);
+            //if (cachedList != null && cachedList.Count() > 0)
+            if (cachedList != null)
+            {
+                Console.Out.WriteLine("Using cache file {0}.", cacheFilePath);
+                return cachedList;
+            }
+            else
+            {
+                var values = GetList(from, to);
+                Utils.WriteCacheFile(cacheFilePath, values);
+                Console.Out.WriteLine("Successfully wrote file to {0}", cacheFilePath);
+                return values;
+            }
+        }
+
+        public abstract List<T> GetList(DateTime from, DateTime to);
 
         public abstract List<T> GetCombinedUpdatedAndExisting(FileDate lastCacheFileInfo, DateTime from, DateTime to);
     }
