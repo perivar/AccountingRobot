@@ -119,7 +119,7 @@ namespace AliOrderScraper
             }
         }
 
-        static List<AliExpressOrder> ScrapeAliExpressOrders(string userDataDir, string aliExpressUsername, string aliExpressPassword, DateTime from)
+        public static List<AliExpressOrder> ScrapeAliExpressOrders(string userDataDir, string aliExpressUsername, string aliExpressPassword, DateTime from)
         {
             var aliExpressOrders = new List<AliExpressOrder>();
 

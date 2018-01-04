@@ -21,10 +21,12 @@ namespace AccountingRobot
             // prepopulate lookup lists
             Console.Out.WriteLine("Prepopulating Lookup Lists ...");
 
-            var stripeTransactions = Stripe.GetLatestStripeTransactions();
+            //var stripeTransactions = Stripe.GetLatestStripeTransactions();
+            var stripeTransactions = StripeChargeFactory.Instance.GetLatest();
             Console.Out.WriteLine("Successfully read Stripe transactions ...");
 
-            var paypalTransactions = Paypal.GetLatestPaypalTransactions();
+            //var paypalTransactions = Paypal.GetLatestPaypalTransactions();
+            var paypalTransactions = PayPalFactory.Instance.GetLatest();
             Console.Out.WriteLine("Successfully read PayPal transactions ...");
 
             // process the transactions and create accounting overview
@@ -753,11 +755,13 @@ namespace AccountingRobot
             var to = date.CurrentDate;
 
             // prepopulate some lookup lists
-            var stripePayoutTransactions = Stripe.GetLatestStripePayoutTransactions();
+            //var stripePayoutTransactions = Stripe.GetLatestStripePayoutTransactions();
+            var stripePayoutTransactions = StripePayoutFactory.Instance.GetLatest();
             Console.Out.WriteLine("Successfully read Stripe payout transactions ...");
 
             var oberloOrders = Oberlo.GetLatestOberloOrders();
-            var aliExpressOrders = AliExpress.GetLatestAliExpressOrders();
+            //var aliExpressOrders = AliExpress.GetLatestAliExpressOrders();
+            var aliExpressOrders = AliExpressFactory.Instance.GetLatest();
             var aliExpressOrderGroups = AliExpress.CombineOrders(aliExpressOrders);
 
             // run through the bank account transactions

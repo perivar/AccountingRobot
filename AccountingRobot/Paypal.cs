@@ -125,7 +125,7 @@ namespace AccountingRobot
             return GetPayPalTransactions(cacheFilePath, payPalApiUsername, payPalApiPassword, payPalApiSignature, from, to, false);
         }
 
-        static List<PayPalTransaction> GetPayPalTransactions(string cacheFilePath, string payPalApiUsername, string payPalApiPassword, string payPalApiSignature, DateTime from, DateTime to, bool forceUpdate = false)
+        public static List<PayPalTransaction> GetPayPalTransactions(string cacheFilePath, string payPalApiUsername, string payPalApiPassword, string payPalApiSignature, DateTime from, DateTime to, bool forceUpdate = false)
         {
             var cachedPayPalTransactions = Utils.ReadCacheFile<PayPalTransaction>(cacheFilePath, forceUpdate);
             //if (cachedPayPalTransactions != null && cachedPayPalTransactions.Count() > 0)
@@ -154,7 +154,7 @@ namespace AccountingRobot
             }
         }
 
-        static List<PayPalTransaction> GetPayPalTransactions(string payPalApiUsername, string payPalApiPassword, string payPalApiSignature, DateTime from, DateTime to)
+        public static List<PayPalTransaction> GetPayPalTransactions(string payPalApiUsername, string payPalApiPassword, string payPalApiSignature, DateTime from, DateTime to)
         {
             TransactionSearchReq req = new TransactionSearchReq();
             req.TransactionSearchRequest = new TransactionSearchRequestType();

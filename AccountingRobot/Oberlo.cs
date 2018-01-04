@@ -116,7 +116,7 @@ namespace OberloScraper
             }
         }
 
-        static List<OberloOrder> ScrapeOberloOrders(string userDataDir, string oberloUsername, string oberloPassword, DateTime from, DateTime to)
+        public static List<OberloOrder> ScrapeOberloOrders(string userDataDir, string oberloUsername, string oberloPassword, DateTime from, DateTime to)
         {
             var oberloOrders = new List<OberloOrder>();
 

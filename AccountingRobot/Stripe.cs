@@ -116,7 +116,7 @@ namespace AccountingRobot
         }
 
         #region Charge Transactions (StripeChargeService)
-        public static List<StripeTransaction> GetLatestStripeTransactions(bool forceUpdate = false)
+        public static List<StripeTransaction> GetLatestStripeChargeTransactions(bool forceUpdate = false)
         {
             // get stripe configuration parameters
             string stripeApiKey = ConfigurationManager.AppSettings["StripeApiKey"];
@@ -143,14 +143,14 @@ namespace AccountingRobot
                 if (from.Date.Equals(to.Date))
                 {
                     // use latest cache file (or force an update)
-                    return GetStripeTransactions(lastCacheFileInfo.FilePath, stripeApiKey, from, to, forceUpdate);
+                    return GetStripeChargeTransactions(lastCacheFileInfo.FilePath, stripeApiKey, from, to, forceUpdate);
                 }
                 else if (from != firstDayOfTheYear)
                 {
                     // we have to combine two files:
                     // the original cache file and the new transactions file
                     Console.Out.WriteLine("Finding Stripe transactions from {0:yyyy-MM-dd} to {1:yyyy-MM-dd}", from, to);
-                    var newStripeTransactions = GetStripeTransactions(stripeApiKey, from, to);
+                    var newStripeTransactions = GetStripeChargeTransactions(stripeApiKey, from, to);
                     var originalStripeTransactions = Utils.ReadCacheFile<StripeTransaction>(lastCacheFileInfo.FilePath);
 
                     // copy all the original stripe transactions into a new file, except entries that are 
@@ -185,10 +185,10 @@ namespace AccountingRobot
 
             // get updated transactions (or from cache file if update is forced)
             string cacheFilePath = Path.Combine(cacheDir, string.Format("{0}-{1:yyyy-MM-dd}-{2:yyyy-MM-dd}.csv", cacheFileNamePrefix, from, to));
-            return GetStripeTransactions(cacheFilePath, stripeApiKey, from, to, forceUpdate);
+            return GetStripeChargeTransactions(cacheFilePath, stripeApiKey, from, to, forceUpdate);
         }
 
-        static List<StripeTransaction> GetStripeTransactions(string cacheFilePath, string stripeApiKey, DateTime from, DateTime to, bool forceUpdate = false)
+        public static List<StripeTransaction> GetStripeChargeTransactions(string cacheFilePath, string stripeApiKey, DateTime from, DateTime to, bool forceUpdate = false)
         {
             var cachedStripeTransactions = Utils.ReadCacheFile<StripeTransaction>(cacheFilePath, forceUpdate);
             //if (cachedStripeTransactions != null && cachedStripeTransactions.Count() > 0)
@@ -200,7 +200,7 @@ namespace AccountingRobot
             else
             {
                 Console.Out.WriteLine("Finding Stripe transactions from {0:yyyy-MM-dd} to {1:yyyy-MM-dd}", from, to);
-                var stripeTransactions = GetStripeTransactions(stripeApiKey, from, to);
+                var stripeTransactions = GetStripeChargeTransactions(stripeApiKey, from, to);
 
                 using (var sw = new StreamWriter(cacheFilePath))
                 {
@@ -217,7 +217,7 @@ namespace AccountingRobot
             }
         }
 
-        static List<StripeTransaction> GetStripeTransactions(string stripeApiKey, DateTime from, DateTime to)
+        public static List<StripeTransaction> GetStripeChargeTransactions(string stripeApiKey, DateTime from, DateTime to)
         {
             StripeConfiguration.SetApiKey(stripeApiKey);
 
@@ -380,7 +380,7 @@ namespace AccountingRobot
             return GetStripePayoutTransactions(cacheFilePath, stripeApiKey, from, to, forceUpdate);
         }
 
-        static List<StripeTransaction> GetStripePayoutTransactions(string cacheFilePath, string stripeApiKey, DateTime from, DateTime to, bool forceUpdate = false)
+        public static List<StripeTransaction> GetStripePayoutTransactions(string cacheFilePath, string stripeApiKey, DateTime from, DateTime to, bool forceUpdate = false)
         {
             var cachedStripeTransactions = Utils.ReadCacheFile<StripeTransaction>(cacheFilePath, forceUpdate);
             //if (cachedStripeTransactions != null && cachedStripeTransactions.Count() > 0)
@@ -409,7 +409,7 @@ namespace AccountingRobot
             }
         }
 
-        static List<StripeTransaction> GetStripePayoutTransactions(string stripeApiKey, DateTime from, DateTime to)
+        public static List<StripeTransaction> GetStripePayoutTransactions(string stripeApiKey, DateTime from, DateTime to)
         {
             StripeConfiguration.SetApiKey(stripeApiKey);
 

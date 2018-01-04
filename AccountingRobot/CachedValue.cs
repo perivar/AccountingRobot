@@ -1,6 +1,7 @@
 ﻿using CsvHelper;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Globalization;
 using System.IO;
 
@@ -8,12 +9,13 @@ namespace AccountingRobot
 {
     public abstract class CachedValue<T>
     {
-        protected String cacheDir;
-        protected String cacheFileNamePrefix;
+        protected abstract string CacheFileNamePrefix { get; }
 
         public List<T> GetLatest(bool forceUpdate = false)
         {
-            var lastCacheFileInfo = Utils.FindLastCacheFile(cacheDir, cacheFileNamePrefix);
+            string cacheDir = ConfigurationManager.AppSettings["CacheDir"];
+
+            var lastCacheFileInfo = Utils.FindLastCacheFile(cacheDir, CacheFileNamePrefix);
 
             var date = new Date();
             var currentDate = date.CurrentDate;
@@ -33,14 +35,15 @@ namespace AccountingRobot
                 if (from.Date.Equals(to.Date))
                 {
                     // use latest cache file (or force an update)
-                    return GetLatest(lastCacheFileInfo.FilePath, from, forceUpdate);
+                    return GetLatest(lastCacheFileInfo.FilePath, from, to, forceUpdate);
                 }
                 else if (from != firstDayOfTheYear)
                 {
-                    var updatedValues = GetCombinedUpdatedAndExisting();
+                    // combine new and old values
+                    var updatedValues = GetCombinedUpdatedAndExisting(lastCacheFileInfo, from, to);
 
                     // and store to new file
-                    string newCacheFilePath = Path.Combine(cacheDir, string.Format("{0}-{1:yyyy-MM-dd}-{2:yyyy-MM-dd}.csv", cacheFileNamePrefix, firstDayOfTheYear, to));
+                    string newCacheFilePath = Path.Combine(cacheDir, string.Format("{0}-{1:yyyy-MM-dd}-{2:yyyy-MM-dd}.csv", CacheFileNamePrefix, firstDayOfTheYear, to));
                     using (var sw = new StreamWriter(newCacheFilePath))
                     {
                         var csvWriter = new CsvWriter(sw);
@@ -63,12 +66,12 @@ namespace AccountingRobot
             }
 
             // get updated transactions (or from cache file if update is forced)
-            string cacheFilePath = Path.Combine(cacheDir, string.Format("{0}-{1:yyyy-MM-dd}-{2:yyyy-MM-dd}.csv", cacheFileNamePrefix, from, to));
-            return GetLatest(cacheFilePath, from, forceUpdate);
+            string cacheFilePath = Path.Combine(cacheDir, string.Format("{0}-{1:yyyy-MM-dd}-{2:yyyy-MM-dd}.csv", CacheFileNamePrefix, from, to));
+            return GetLatest(cacheFilePath, from, to, forceUpdate);
         }
 
-        public abstract List<T> GetLatest(string filePath, DateTime from, bool forceUpdate);
+        public abstract List<T> GetLatest(string filePath, DateTime from, DateTime to, bool forceUpdate);
 
-        public abstract List<T> GetCombinedUpdatedAndExisting();
+        public abstract List<T> GetCombinedUpdatedAndExisting(FileDate lastCacheFileInfo, DateTime from, DateTime to);
     }
 }

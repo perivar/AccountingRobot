@@ -83,7 +83,7 @@ namespace VerifyTool
 
         static void CheckStripe(string filePath)
         {
-            var stripeTransactions = Stripe.GetLatestStripeTransactions();
+            var stripeTransactions = Stripe.GetLatestStripeChargeTransactions();
             //Console.Out.WriteLine("Successfully read Stripe transactions ...");
 
             var stripePayoutTransactions = Stripe.GetLatestStripePayoutTransactions();
