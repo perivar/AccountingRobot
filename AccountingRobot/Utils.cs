@@ -9,21 +9,21 @@ using System.Text.RegularExpressions;
 namespace AccountingRobot
 {
     public static class Utils
-    { 
+    {
         public static bool CaseInsensitiveContains(this string text, string value, StringComparison stringComparison = StringComparison.CurrentCultureIgnoreCase)
         {
             return text.IndexOf(value, stringComparison) >= 0;
         }
 
-        public static KeyValuePair<DateTime, string> FindLastCacheFile(string cacheDir, string cacheFileNamePrefix)
+        public static FileDate FindLastCacheFile(string cacheDir, string cacheFileNamePrefix)
         {
             string dateFromToRegexPattern = @"(\d{4}\-\d{2}\-\d{2})\-(\d{4}\-\d{2}\-\d{2})\.csv$";
             return FindLastCacheFile(cacheDir, cacheFileNamePrefix, dateFromToRegexPattern, "yyyy-MM-dd", "\\-");
         }
 
-        public static KeyValuePair<DateTime, string> FindLastCacheFile(string cacheDir, string cacheFileNamePrefix, string dateFromToRegexPattern, string dateParsePattern, string separator)
+        public static FileDate FindLastCacheFile(string cacheDir, string cacheFileNamePrefix, string dateFromToRegexPattern, string dateParsePattern, string separator)
         {
-            var dateDictonary = new SortedDictionary<DateTime, string>();
+            var dateDictonary = new SortedDictionary<DateTime, FileDate>();
 
             string regexp = string.Format("{0}{1}{2}", cacheFileNamePrefix, separator, dateFromToRegexPattern);
             Regex reg = new Regex(regexp);
@@ -39,19 +39,26 @@ namespace AccountingRobot
                     var from = match.Groups[1].Value;
                     var to = match.Groups[2].Value;
 
+                    var dateFrom = DateTime.ParseExact(from, dateParsePattern, CultureInfo.InvariantCulture);
                     var dateTo = DateTime.ParseExact(to, dateParsePattern, CultureInfo.InvariantCulture);
-                    dateDictonary.Add(dateTo, filePath);
+                    var fileDate = new FileDate
+                    {
+                        From = dateFrom,
+                        To = dateTo,
+                        FilePath = filePath
+                    };
+                    dateDictonary.Add(dateTo, fileDate);
                 }
             }
 
             if (dateDictonary.Count() > 0)
             {
                 // the first element is the newest date
-                return dateDictonary.Last();
+                return dateDictonary.Last().Value;
             }
 
-            // return a default key value pair
-            return default(KeyValuePair<DateTime, string>);
+            // return a default file date
+            return default(FileDate);
         }
 
         public static List<T> ReadCacheFile<T>(string filePath, bool forceUpdate = false)
@@ -96,6 +103,13 @@ namespace AccountingRobot
         }
     }
 
+    public class FileDate
+    {
+        public DateTime From { get; set; }
+        public DateTime To { get; set; }
+        public string FilePath { get; set; }
+    }
+
     public class Date
     {
         DateTime currentDate;
@@ -103,7 +117,8 @@ namespace AccountingRobot
         DateTime firstDayOfTheYear;
         DateTime lastDayOfTheYear;
 
-        public DateTime CurrentDate {
+        public DateTime CurrentDate
+        {
             get { return Utils.AbsoluteEnd(currentDate); }
         }
 

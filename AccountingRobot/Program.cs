@@ -15,6 +15,9 @@ namespace AccountingRobot
     {
         static void Main(string[] args)
         {
+            // init date
+            var date = new Date();
+
             // prepopulate lookup lists
             Console.Out.WriteLine("Prepopulating Lookup Lists ...");
 
@@ -45,13 +48,28 @@ namespace AccountingRobot
             string accountingFileDir = ConfigurationManager.AppSettings["AccountingDir"];
             string accountingFileNamePrefix = "wazalo regnskap";
             string accountingDateFromToRegexPattern = @"(\d{4}\-\d{2}\-\d{2})\-(\d{4}\-\d{2}\-\d{2})\.xlsx$";
-            var lastAccountingFile = Utils.FindLastCacheFile(accountingFileDir, accountingFileNamePrefix, accountingDateFromToRegexPattern, "yyyy-MM-dd", "\\-");
+            var lastAccountingFileInfo = Utils.FindLastCacheFile(accountingFileDir, accountingFileNamePrefix, accountingDateFromToRegexPattern, "yyyy-MM-dd", "\\-");
 
             // if the cache file object has values
-            if (!lastAccountingFile.Equals(default(KeyValuePair<DateTime, string>)))
+            if (!lastAccountingFileInfo.Equals(default(FileDate)))
             {
-                Console.Out.WriteLine("Found an accounting spreadsheet from {0:yyyy-MM-dd}", lastAccountingFile.Key);
-                UpdateExcelFile(lastAccountingFile.Value, accountingItems);
+                Console.Out.WriteLine("Found an accounting spreadsheet from {0:yyyy-MM-dd}", lastAccountingFileInfo.From);
+                UpdateExcelFile(lastAccountingFileInfo.FilePath, accountingItems);
+
+                // rename spreadsheet to today's date
+                if (lastAccountingFileInfo.To != date.CurrentDate.Date)
+                {
+                    var from = lastAccountingFileInfo.From;
+                    var to = date.CurrentDate;
+
+                    string accountingFileName = string.Format("{0}-{1:yyyy-MM-dd}-{2:yyyy-MM-dd}.xlsx", accountingFileNamePrefix, from, to);
+                    string filePath = Path.Combine(accountingFileDir, accountingFileName);
+
+                    File.Move(lastAccountingFileInfo.FilePath, filePath);
+                    
+                    Console.Out.WriteLine("Successfully renamed accounting file!");
+                }
+
                 //UpdateExcelFileWithTransactionsIds(lastAccountingFile.Value, accountingItems);
             }
             else
@@ -59,7 +77,6 @@ namespace AccountingRobot
                 Console.Out.WriteLine("No existing accounting spreadsheets found - creating ...");
 
                 // export to excel file
-                var date = new Date();
                 var from = date.FirstDayOfTheYear;
                 var to = date.CurrentDate;
 
@@ -1003,7 +1020,7 @@ namespace AccountingRobot
             var date = new Date();
             var from = date.FirstDayOfTheYear; //.AddDays(-30); // always go back a month
             var to = date.CurrentDate;
-            string querySuffix = string.Format(CultureInfo.InvariantCulture, "status=any&created_at_min={0:yyyy-MM-ddThh:mm:sszzz}&created_at_max={1:yyyy-MM-ddThh:mm:sszzz}", from, to);
+            string querySuffix = string.Format(CultureInfo.InvariantCulture, "status=any&created_at_min={0:yyyy-MM-ddTHH:mm:sszzz}&created_at_max={1:yyyy-MM-ddTHH:mm:sszzz}", from, to);
             var shopifyOrders = Shopify.ReadShopifyOrders(shopifyDomain, shopifyAPIKey, shopifyAPIPassword, querySuffix);
             Console.Out.WriteLine("Successfully read all Shopify orders ...");
 

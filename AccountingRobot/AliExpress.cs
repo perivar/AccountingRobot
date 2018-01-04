@@ -26,7 +26,7 @@ namespace AliOrderScraper
 
             string cacheFileNamePrefix = "AliExpress Orders";
 
-            var lastCacheFile = Utils.FindLastCacheFile(cacheDir, cacheFileNamePrefix);
+            var lastCacheFileInfo = Utils.FindLastCacheFile(cacheDir, cacheFileNamePrefix);
 
             var date = new Date();
             var currentDate = date.CurrentDate;
@@ -37,16 +37,16 @@ namespace AliOrderScraper
             DateTime to = default(DateTime);
 
             // if the cache file object has values
-            if (!lastCacheFile.Equals(default(KeyValuePair<DateTime, string>)))
+            if (!lastCacheFileInfo.Equals(default(FileDate)))
             {
-                from = lastCacheFile.Key.Date;
+                from = lastCacheFileInfo.To;
                 to = currentDate;
 
                 // if the from date is today, then we already have an updated file so use cache
                 if (from.Date.Equals(to.Date))
                 {
                     // use latest cache file (or force an update)
-                    return GetAliExpressOrders(lastCacheFile.Value, userDataDir, aliExpressUsername, aliExpressPassword, from, forceUpdate);
+                    return GetAliExpressOrders(lastCacheFileInfo.FilePath, userDataDir, aliExpressUsername, aliExpressPassword, from, forceUpdate);
                 }
                 else if (from != firstDayOfTheYear)
                 {
@@ -54,7 +54,7 @@ namespace AliOrderScraper
                     // the original cache file and the new transactions file
                     Console.Out.WriteLine("Finding AliExpress Orders from {0:yyyy-MM-dd} to {1:yyyy-MM-dd}", from, to);
                     var newAliExpressOrders = ScrapeAliExpressOrders(userDataDir, aliExpressUsername, aliExpressPassword, from);
-                    var originalAliExpressOrders = Utils.ReadCacheFile<AliExpressOrder>(lastCacheFile.Value);
+                    var originalAliExpressOrders = Utils.ReadCacheFile<AliExpressOrder>(lastCacheFileInfo.FilePath);
 
                     // copy all the original AliExpress orders into a new file, except entries that are 
                     // from the from date or newer

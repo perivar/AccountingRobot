@@ -15,17 +15,17 @@ namespace VerifyTool
             string accountingFileDir = ConfigurationManager.AppSettings["AccountingDir"];
             string accountingFileNamePrefix = "wazalo regnskap";
             string accountingDateFromToRegexPattern = @"(\d{4}\-\d{2}\-\d{2})\-(\d{4}\-\d{2}\-\d{2})\.xlsx$";
-            var lastAccountingFile = Utils.FindLastCacheFile(accountingFileDir, accountingFileNamePrefix, accountingDateFromToRegexPattern, "yyyy-MM-dd", "\\-");
+            var lastAccountingFileInfo = Utils.FindLastCacheFile(accountingFileDir, accountingFileNamePrefix, accountingDateFromToRegexPattern, "yyyy-MM-dd", "\\-");
 
             // if the cache file object has values
-            if (!lastAccountingFile.Equals(default(KeyValuePair<DateTime, string>)))
+            if (!lastAccountingFileInfo.Equals(default(KeyValuePair<DateTime, string>)))
             {
-                Console.Out.WriteLine("Found an accounting spreadsheet from {0:yyyy-MM-dd}", lastAccountingFile.Key);
+                Console.Out.WriteLine("Found an accounting spreadsheet from {0:yyyy-MM-dd}", lastAccountingFileInfo.From);
                 Console.Out.WriteLine("Checking PayPal transactions...");
-                CheckPayPal(lastAccountingFile.Value);
+                CheckPayPal(lastAccountingFileInfo.FilePath);
 
                 Console.Out.WriteLine("Checking Sripe transactions...");
-                CheckStripe(lastAccountingFile.Value);
+                CheckStripe(lastAccountingFileInfo.FilePath);
             }
             else
             {

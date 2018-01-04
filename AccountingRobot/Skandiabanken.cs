@@ -18,7 +18,7 @@ namespace AccountingRobot
             string cacheFileNamePrefix = ConfigurationManager.AppSettings["SBankenAccountNumber"];
 
             string dateFromToRegexPattern = @"(\d{4}_\d{2}_\d{2})\-(\d{4}_\d{2}_\d{2})\.xlsx$";
-            var lastCacheFile = Utils.FindLastCacheFile(cacheDir, cacheFileNamePrefix, dateFromToRegexPattern, "yyyy_MM_dd", "_");
+            var lastCacheFileInfo = Utils.FindLastCacheFile(cacheDir, cacheFileNamePrefix, dateFromToRegexPattern, "yyyy_MM_dd", "_");
 
             var date = new Date();
             var currentDate = date.CurrentDate;
@@ -30,16 +30,16 @@ namespace AccountingRobot
             DateTime to = default(DateTime);
 
             // if the cache file object has values
-            if (!lastCacheFile.Equals(default(KeyValuePair<DateTime, string>)))
+            if (!lastCacheFileInfo.Equals(default(KeyValuePair<DateTime, string>)))
             {
-                from = lastCacheFile.Key.Date;
+                from = lastCacheFileInfo.To;
                 to = yesterday;
 
                 // if the from date is today, then we already have an updated file so use cache
                 if (from.Date.Equals(to.Date))
                 {
                     // use latest cache file
-                    return ReadBankStatement(lastCacheFile.Value);
+                    return ReadBankStatement(lastCacheFileInfo.FilePath);
                 }
             }
 

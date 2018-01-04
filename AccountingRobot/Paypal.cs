@@ -60,7 +60,7 @@ namespace AccountingRobot
             string cacheDir = ConfigurationManager.AppSettings["CacheDir"];
             string cacheFileNamePrefix = "PayPal Transactions";
 
-            var lastCacheFile = Utils.FindLastCacheFile(cacheDir, cacheFileNamePrefix);
+            var lastCacheFileInfo = Utils.FindLastCacheFile(cacheDir, cacheFileNamePrefix);
 
             var date = new Date();
             var currentDate = date.CurrentDate;
@@ -71,16 +71,16 @@ namespace AccountingRobot
             DateTime to = default(DateTime);
 
             // if the cache file object has values
-            if (!lastCacheFile.Equals(default(KeyValuePair<DateTime, string>)))
+            if (!lastCacheFileInfo.Equals(default(FileDate)))
             {
-                from = lastCacheFile.Key.Date;
+                from = lastCacheFileInfo.To;
                 to = currentDate;
 
                 // if the from date is today, then we already have an updated file so use cache
                 if (from.Date.Equals(to.Date))
                 {
                     // use latest cache file (or force an update)
-                    return GetPayPalTransactions(lastCacheFile.Value, payPalApiUsername, payPalApiPassword, payPalApiSignature, from, to, forceUpdate);
+                    return GetPayPalTransactions(lastCacheFileInfo.FilePath, payPalApiUsername, payPalApiPassword, payPalApiSignature, from, to, forceUpdate);
                 }
                 else if (from != firstDayOfTheYear)
                 {
@@ -88,7 +88,7 @@ namespace AccountingRobot
                     // the original cache file and the new transactions file
                     Console.Out.WriteLine("Finding PayPal transactions from {0:yyyy-MM-dd} to {1:yyyy-MM-dd}", from, to);
                     var newPayPalTransactions = GetPayPalTransactions(payPalApiUsername, payPalApiPassword, payPalApiSignature, from, to);
-                    var originalPayPalTransactions = Utils.ReadCacheFile<PayPalTransaction>(lastCacheFile.Value);
+                    var originalPayPalTransactions = Utils.ReadCacheFile<PayPalTransaction>(lastCacheFileInfo.FilePath);
 
                     // copy all the original PayPal transactions into a new file, except entries that are 
                     // from the from date or newer

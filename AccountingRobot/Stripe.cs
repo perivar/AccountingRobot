@@ -123,7 +123,7 @@ namespace AccountingRobot
             string cacheDir = ConfigurationManager.AppSettings["CacheDir"];
             string cacheFileNamePrefix = "Stripe Transactions";
 
-            var lastCacheFile = Utils.FindLastCacheFile(cacheDir, cacheFileNamePrefix);
+            var lastCacheFileInfo = Utils.FindLastCacheFile(cacheDir, cacheFileNamePrefix);
 
             var date = new Date();
             var currentDate = date.CurrentDate;
@@ -134,16 +134,16 @@ namespace AccountingRobot
             DateTime to = default(DateTime);
 
             // if the cache file object has values
-            if (!lastCacheFile.Equals(default(KeyValuePair<DateTime, string>)))
+            if (!lastCacheFileInfo.Equals(default(KeyValuePair<DateTime, string>)))
             {
-                from = lastCacheFile.Key.Date;
+                from = lastCacheFileInfo.To;
                 to = currentDate;
 
                 // if the from date is today, then we already have an updated file so use cache
                 if (from.Date.Equals(to.Date))
                 {
                     // use latest cache file (or force an update)
-                    return GetStripeTransactions(lastCacheFile.Value, stripeApiKey, from, to, forceUpdate);
+                    return GetStripeTransactions(lastCacheFileInfo.FilePath, stripeApiKey, from, to, forceUpdate);
                 }
                 else if (from != firstDayOfTheYear)
                 {
@@ -151,7 +151,7 @@ namespace AccountingRobot
                     // the original cache file and the new transactions file
                     Console.Out.WriteLine("Finding Stripe transactions from {0:yyyy-MM-dd} to {1:yyyy-MM-dd}", from, to);
                     var newStripeTransactions = GetStripeTransactions(stripeApiKey, from, to);
-                    var originalStripeTransactions = Utils.ReadCacheFile<StripeTransaction>(lastCacheFile.Value);
+                    var originalStripeTransactions = Utils.ReadCacheFile<StripeTransaction>(lastCacheFileInfo.FilePath);
 
                     // copy all the original stripe transactions into a new file, except entries that are 
                     // from the from date or newer
@@ -315,7 +315,7 @@ namespace AccountingRobot
             string cacheDir = ConfigurationManager.AppSettings["CacheDir"];
             string cacheFileNamePrefix = "Stripe Payout Transactions";
 
-            var lastCacheFile = Utils.FindLastCacheFile(cacheDir, cacheFileNamePrefix);
+            var lastCacheFileInfo = Utils.FindLastCacheFile(cacheDir, cacheFileNamePrefix);
 
             var date = new Date();
             var currentDate = date.CurrentDate;
@@ -326,16 +326,16 @@ namespace AccountingRobot
             DateTime to = default(DateTime);
 
             // if the cache file object has values
-            if (!lastCacheFile.Equals(default(KeyValuePair<DateTime, string>)))
+            if (!lastCacheFileInfo.Equals(default(KeyValuePair<DateTime, string>)))
             {
-                from = lastCacheFile.Key.Date;
+                from = lastCacheFileInfo.To;
                 to = currentDate;
 
                 // if the from date is today, then we already have an updated file so use cache
                 if (from.Date.Equals(to.Date))
                 {
                     // use latest cache file (or force an update)
-                    return GetStripePayoutTransactions(lastCacheFile.Value, stripeApiKey, from, to, forceUpdate);
+                    return GetStripePayoutTransactions(lastCacheFileInfo.FilePath, stripeApiKey, from, to, forceUpdate);
                 }
                 else if (from != firstDayOfTheYear)
                 {
@@ -343,7 +343,7 @@ namespace AccountingRobot
                     // the original cache file and the new transactions file
                     Console.Out.WriteLine("Finding Stripe payout transactions from {0:yyyy-MM-dd} to {1:yyyy-MM-dd}", from, to);
                     var newStripePayoutTransactions = GetStripePayoutTransactions(stripeApiKey, from, to);
-                    var originalStripePayoutTransactions = Utils.ReadCacheFile<StripeTransaction>(lastCacheFile.Value);
+                    var originalStripePayoutTransactions = Utils.ReadCacheFile<StripeTransaction>(lastCacheFileInfo.FilePath);
 
                     // copy all the original stripe transactions into a new file, except entries that are 
                     // from the from date or newer

@@ -23,7 +23,7 @@ namespace OberloScraper
             string cacheDir = ConfigurationManager.AppSettings["CacheDir"];
             string cacheFileNamePrefix = "Oberlo Orders";
 
-            var lastCacheFile = Utils.FindLastCacheFile(cacheDir, cacheFileNamePrefix);
+            var lastCacheFileInfo = Utils.FindLastCacheFile(cacheDir, cacheFileNamePrefix);
 
             var date = new Date();
             var currentDate = date.CurrentDate;
@@ -34,16 +34,16 @@ namespace OberloScraper
             DateTime to = default(DateTime);
 
             // if the cache file object has values
-            if (!lastCacheFile.Equals(default(KeyValuePair<DateTime, string>)))
+            if (!lastCacheFileInfo.Equals(default(FileDate)))
             {
-                from = lastCacheFile.Key.Date;
+                from = lastCacheFileInfo.To;
                 to = currentDate;
 
                 // if the from date is today, then we already have an updated file so use cache
                 if (from.Date.Equals(to.Date))
                 {
                     // use latest cache file (or force an update)
-                    return GetOberloOrders(lastCacheFile.Value, userDataDir, oberloUsername, oberloPassword, from, to, forceUpdate);
+                    return GetOberloOrders(lastCacheFileInfo.FilePath, userDataDir, oberloUsername, oberloPassword, from, to, forceUpdate);
                 }
                 else if (from != firstDayOfTheYear)
                 {
@@ -51,7 +51,7 @@ namespace OberloScraper
                     // the original cache file and the new transactions file
                     Console.Out.WriteLine("Finding Oberlo Orders from {0:yyyy-MM-dd} to {1:yyyy-MM-dd}", from, to);
                     var newOberloOrders = ScrapeOberloOrders(userDataDir, oberloUsername, oberloPassword, from, to);
-                    var originalOberloOrders = Utils.ReadCacheFile<OberloOrder>(lastCacheFile.Value);
+                    var originalOberloOrders = Utils.ReadCacheFile<OberloOrder>(lastCacheFileInfo.FilePath);
 
                     // copy all the original Oberlo orders into a new file, except entries that are 
                     // from the from date or newer
