@@ -33,8 +33,8 @@ namespace AccountingRobot
                         Limit = MAX_PAGINATION,
                         Created = new StripeDateFilter
                         {
-                            GreaterThanOrEqual = from.Date,
-                            LessThanOrEqual = to.Date
+                            GreaterThanOrEqual = from,
+                            LessThanOrEqual = to
                         }
                     });
                     itemsExpected = charges.Count();
@@ -48,8 +48,8 @@ namespace AccountingRobot
                         StartingAfter = lastId,
                         Created = new StripeDateFilter
                         {
-                            GreaterThanOrEqual = from.Date,
-                            LessThanOrEqual = to.Date
+                            GreaterThanOrEqual = from,
+                            LessThanOrEqual = to
                         }
                     });
                     itemsExpected = charges.Count();
@@ -120,8 +120,8 @@ namespace AccountingRobot
                         Limit = MAX_PAGINATION,
                         Created = new StripeDateFilter
                         {
-                            GreaterThanOrEqual = from.Date,
-                            LessThanOrEqual = to.Date
+                            GreaterThanOrEqual = from,
+                            LessThanOrEqual = to
                         }
                     });
                     itemsExpected = charges.Count();
@@ -135,8 +135,8 @@ namespace AccountingRobot
                         StartingAfter = lastId,
                         Created = new StripeDateFilter
                         {
-                            GreaterThanOrEqual = from.Date,
-                            LessThanOrEqual = to.Date
+                            GreaterThanOrEqual = from,
+                            LessThanOrEqual = to
                         }
                     });
                     itemsExpected = charges.Count();

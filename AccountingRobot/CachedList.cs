@@ -28,11 +28,12 @@ namespace AccountingRobot
             // if the cache file object has values
             if (!lastCacheFileInfo.Equals(default(FileDate)))
             {
+                // find values starting from when the cache file ends and until now
                 from = lastCacheFileInfo.To;
                 to = currentDate;
-
+                
                 // if the from date is today, then we already have an updated file so use cache
-                if (from.Date.Equals(to.Date))
+                if (lastCacheFileInfo.To.Date.Equals(currentDate.Date))
                 {
                     // use latest cache file (or force an update)
                     return GetList(lastCacheFileInfo.FilePath, from, to, forceUpdate);
