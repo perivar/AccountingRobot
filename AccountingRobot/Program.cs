@@ -1190,7 +1190,7 @@ namespace AccountingRobot
         {
             // set start and stop date
             var startDate = skandiabankenTransaction.ExternalPurchaseDate.AddDays(-4);
-            var endDate = skandiabankenTransaction.ExternalPurchaseDate.AddDays(0);
+            var endDate = skandiabankenTransaction.ExternalPurchaseDate.AddDays(2);
 
             // lookup in AliExpress purchase list
             // matching ordertime and orderamount

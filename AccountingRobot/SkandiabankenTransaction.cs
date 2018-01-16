@@ -135,6 +135,14 @@ namespace AccountingRobot
             return accountingTypeString;
         }
 
+        private Tuple<int,int> ParseDayAndMonth(string dayAndMonth)
+        {
+            var splitted = dayAndMonth.Split('.');
+            int day = int.Parse(splitted.First());
+            int month = int.Parse(splitted.Last());
+            return new Tuple<int, int>(day, month);
+        }
+
         public void ExtractAccountingInformation()
         {
             // good regexp tester   
@@ -166,14 +174,19 @@ namespace AccountingRobot
                 var vendor = matchPurchase.Groups[5].ToString();
                 var exchangeRate = matchPurchase.Groups[7].ToString();
 
-                // parse date
+                // fix edge case where year is likely last year 
+                var dayAndMonthParsed = ParseDayAndMonth(dayAndMonth);
+                int day = dayAndMonthParsed.Item1;
+                int month = dayAndMonthParsed.Item2;
                 int year = TransactionDate.Year;
-                // fix edge case where year is likely last year (before 4th of January)
-                if (TransactionDate < new DateTime(year, 4, 1))
+                var cutoffDate = new DateTime(year, 1, 10); // 10th of Jan
+                if (TransactionDate < cutoffDate
+                    && month == 12) // December
                 {
                     year--;
                 }
                 var dateString = string.Format("{0}.{1}", dayAndMonth, year);
+                // parse date
                 DateTime purchaseDate = DateTime.ParseExact(dateString, "dd.MM.yyyy", CultureInfo.InvariantCulture);
 
                 // store properies
