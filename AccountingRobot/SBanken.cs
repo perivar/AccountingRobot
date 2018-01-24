@@ -10,7 +10,7 @@ using OpenQA.Selenium.Support.UI;
 
 namespace AccountingRobot
 {
-    public static class Skandiabanken
+    public static class SBanken
     {
         public static SkandiabankenBankStatement GetLatestBankStatement(bool forceUpdate = false)
         {
@@ -60,7 +60,7 @@ namespace AccountingRobot
 
         public static SkandiabankenBankStatement ReadBankStatement(string skandiabankenTransactionsFilePath)
         {
-            var skandiabankenTransactions = new List<SkandiabankenTransaction>();
+            var skandiabankenTransactions = new List<SBankenTransaction>();
 
             var wb = new XLWorkbook(skandiabankenTransactionsFilePath);
             var ws = wb.Worksheet("Kontoutskrift");
@@ -94,7 +94,7 @@ namespace AccountingRobot
                 // TEKST	
                 // UT FRA KONTO	
                 // INN PÅ KONTO
-                var skandiabankenTransaction = new SkandiabankenTransaction();
+                var skandiabankenTransaction = new SBankenTransaction();
                 skandiabankenTransaction.TransactionDate = row.Field(0).GetDateTime();
                 skandiabankenTransaction.InterestDate = row.Field(1).GetDateTime();
                 skandiabankenTransaction.ArchiveReference = row.Field(2).GetValue<long>();
@@ -109,11 +109,11 @@ namespace AccountingRobot
 
                 if (accountChange > 0)
                 {
-                    skandiabankenTransaction.AccountingType = SkandiabankenTransaction.AccountingTypeEnum.IncomeUnknown;
+                    skandiabankenTransaction.AccountingType = SBankenTransaction.AccountingTypeEnum.IncomeUnknown;
                 }
                 else
                 {
-                    skandiabankenTransaction.AccountingType = SkandiabankenTransaction.AccountingTypeEnum.CostUnknown;
+                    skandiabankenTransaction.AccountingType = SBankenTransaction.AccountingTypeEnum.CostUnknown;
                 }
 
                 skandiabankenTransactions.Add(skandiabankenTransaction);
@@ -201,7 +201,7 @@ namespace AccountingRobot
             try
             {
                 var waitMainPage = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
-                waitMainPage.Until(ExpectedConditions.UrlToBe("https://secure.sbanken.no/Home/Overview/Full"));
+                waitMainPage.Until(ExpectedConditions.UrlToBe("https://secure.sbanken.no/Home/Overview/Full#/"));
             }
             catch (WebDriverTimeoutException)
             {
@@ -257,7 +257,7 @@ namespace AccountingRobot
 
     public class SkandiabankenBankStatement
     {
-        public List<SkandiabankenTransaction> Transactions { get; set; }
+        public List<SBankenTransaction> Transactions { get; set; }
         public DateTime IncomingBalanceDate { get; set; }
         public string IncomingBalanceLabel { get; set; }
         public decimal IncomingBalance { get; set; }

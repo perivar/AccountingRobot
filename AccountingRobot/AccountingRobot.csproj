@@ -49,6 +49,9 @@
     <Reference Include="FastMember.Signed, Version=1.0.0.9, Culture=neutral, PublicKeyToken=9e8f22703bef9a29, processorArchitecture=MSIL">
       <HintPath>..\packages\FastMember.Signed.1.1.0\lib\net40\FastMember.Signed.dll</HintPath>
     </Reference>
+    <Reference Include="IdentityModel, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\IdentityModel.3.0.0\lib\net461\IdentityModel.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Win32.Primitives, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Win32.Primitives.4.3.0\lib\net46\Microsoft.Win32.Primitives.dll</HintPath>
     </Reference>
@@ -154,14 +157,15 @@
     <Compile Include="Paypal.cs" />
     <Compile Include="PayPalFactory.cs" />
     <Compile Include="PayPalTransaction.cs" />
+    <Compile Include="SBankenFactory.cs" />
     <Compile Include="SeleniumUtils.cs" />
     <Compile Include="Shopify.cs" />
-    <Compile Include="Skandiabanken.cs" />
+    <Compile Include="SBanken.cs" />
     <Compile Include="OberloOrder.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ShopifyOrder.cs" />
-    <Compile Include="SkandiabankenTransaction.cs" />
+    <Compile Include="SBankenTransaction.cs" />
     <Compile Include="Stripe.cs" />
     <Compile Include="StripePayoutFactory.cs" />
     <Compile Include="StripeChargeFactory.cs" />

@@ -26,7 +26,7 @@ namespace AccountingRobot
             DateTime to = default(DateTime);
 
             // if the cache file object has values
-            if (!lastCacheFileInfo.Equals(default(FileDate)))
+            if (lastCacheFileInfo != null && !lastCacheFileInfo.Equals(default(FileDate)))
             {
                 // find values starting from when the cache file ends and until now
                 from = lastCacheFileInfo.To;
