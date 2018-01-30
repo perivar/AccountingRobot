@@ -61,11 +61,8 @@ namespace AccountingRobot
             return default(FileDate);
         }
 
-        public static List<T> ReadCacheFile<T>(string filePath, bool forceUpdate = false)
+        public static List<T> ReadCacheFile<T>(string filePath)
         {
-            // force update even if cache file exists
-            if (forceUpdate) return null;
-
             if (File.Exists(filePath))
             {
                 using (TextReader fileReader = File.OpenText(filePath))

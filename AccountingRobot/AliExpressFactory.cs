@@ -21,6 +21,13 @@ namespace AccountingRobot
 
         protected override string CacheFileNamePrefix { get { return "AliExpress Orders"; } }
 
+        protected override DateTime ForcedUpdateFromDate {
+            get
+            {
+                return new Date().FirstDayOfTheYear;
+            }
+        }
+
         public override List<AliExpressOrder> GetCombinedUpdatedAndExisting(FileDate lastCacheFileInfo, DateTime from, DateTime to)
         {
             // we have to combine two files:

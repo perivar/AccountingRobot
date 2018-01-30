@@ -21,10 +21,10 @@ namespace AccountingRobot
             // prepopulate lookup lists
             Console.Out.WriteLine("Prepopulating Lookup Lists ...");
 
-            var stripeTransactions = StripeChargeFactory.Instance.GetLatest();
+            var stripeTransactions = StripeChargeFactory.Instance.GetLatest(true);
             Console.Out.WriteLine("Successfully read Stripe transactions ...");
 
-            var paypalTransactions = PayPalFactory.Instance.GetLatest();
+            var paypalTransactions = PayPalFactory.Instance.GetLatest(true);
             Console.Out.WriteLine("Successfully read PayPal transactions ...");
 
             // process the transactions and create accounting overview
@@ -35,7 +35,7 @@ namespace AccountingRobot
             customerNames = customerNames.Distinct().ToList();
 
             // find latest skandiabanken transaction spreadsheet
-            var sBankenTransactions = SBankenFactory.Instance.GetLatest();
+            var sBankenTransactions = SBankenFactory.Instance.GetLatest(true);
             var sBankenBankStatement = SBanken.GetLatestBankStatement();
             var accountingBankItems = ProcessBankAccountStatement(sBankenBankStatement, customerNames, stripeTransactions, paypalTransactions);
 
@@ -754,7 +754,7 @@ namespace AccountingRobot
             var to = date.CurrentDate;
 
             // prepopulate some lookup lists
-            var stripePayoutTransactions = StripePayoutFactory.Instance.GetLatest();
+            var stripePayoutTransactions = StripePayoutFactory.Instance.GetLatest(true);
             Console.Out.WriteLine("Successfully read Stripe payout transactions ...");
 
             var oberloOrders = OberloFactory.Instance.GetLatest();

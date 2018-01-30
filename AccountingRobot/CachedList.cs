@@ -1,8 +1,6 @@
-﻿using CsvHelper;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
-using System.Globalization;
 using System.IO;
 
 namespace AccountingRobot
@@ -11,19 +9,33 @@ namespace AccountingRobot
     {
         protected abstract string CacheFileNamePrefix { get; }
 
+        protected abstract DateTime ForcedUpdateFromDate { get; }
+
         public List<T> GetLatest(bool forceUpdate = false)
         {
-            string cacheDir = ConfigurationManager.AppSettings["CacheDir"];
-
-            var lastCacheFileInfo = Utils.FindLastCacheFile(cacheDir, CacheFileNamePrefix);
-
             var date = new Date();
             var currentDate = date.CurrentDate;
             var firstDayOfTheYear = date.FirstDayOfTheYear;
 
+            // default is a lookup from beginning of year until now
+            DateTime from = firstDayOfTheYear;
+            DateTime to = currentDate;
+
+            string cacheDir = ConfigurationManager.AppSettings["CacheDir"];
+
+            if (forceUpdate)
+            {
+                Console.Out.WriteLine("Forcing updating from {0:yyyy-MM-dd} to {1:yyyy-MM-dd}", ForcedUpdateFromDate, to);
+                var values = GetList(ForcedUpdateFromDate, to);
+
+                string forcedCacheFilePath = Path.Combine(cacheDir, string.Format("{0}-{1:yyyy-MM-dd}-{2:yyyy-MM-dd}.csv", CacheFileNamePrefix, ForcedUpdateFromDate, to));
+                Utils.WriteCacheFile(forcedCacheFilePath, values);
+                Console.Out.WriteLine("Successfully wrote file to {0}", forcedCacheFilePath);
+                return values;
+            }
+
             // check if we have a cache file
-            DateTime from = default(DateTime);
-            DateTime to = default(DateTime);
+            var lastCacheFileInfo = Utils.FindLastCacheFile(cacheDir, CacheFileNamePrefix);
 
             // if the cache file object has values
             if (lastCacheFileInfo != null && !lastCacheFileInfo.Equals(default(FileDate)))
@@ -35,8 +47,8 @@ namespace AccountingRobot
                 // if the from date is today, then we already have an updated file so use cache
                 if (lastCacheFileInfo.To.Date.Equals(currentDate.Date))
                 {
-                    // use latest cache file (or force an update)
-                    return GetList(lastCacheFileInfo.FilePath, from, to, forceUpdate);
+                    // use latest cache file (or update if the cache file is empty)
+                    return GetList(lastCacheFileInfo.FilePath, from, to);
                 }
                 else if (from != firstDayOfTheYear)
                 {
@@ -50,21 +62,15 @@ namespace AccountingRobot
                     return updatedValues;
                 }
             }
-            else
-            {
-                // find all from beginning of year until now
-                from = firstDayOfTheYear;
-                to = currentDate;
-            }
 
-            // get updated transactions (or from cache file if update is not forced)
+            // get updated transactions (or from cache file)
             string cacheFilePath = Path.Combine(cacheDir, string.Format("{0}-{1:yyyy-MM-dd}-{2:yyyy-MM-dd}.csv", CacheFileNamePrefix, from, to));
-            return GetList(cacheFilePath, from, to, forceUpdate);
+            return GetList(cacheFilePath, from, to);
         }
 
-        public List<T> GetList(string cacheFilePath, DateTime from, DateTime to, bool forceUpdate)
+        public List<T> GetList(string cacheFilePath, DateTime from, DateTime to)
         {
-            var cachedList = Utils.ReadCacheFile<T>(cacheFilePath, forceUpdate);
+            var cachedList = Utils.ReadCacheFile<T>(cacheFilePath);
             //if (cachedList != null && cachedList.Count() > 0)
             if (cachedList != null)
             {
@@ -73,6 +79,7 @@ namespace AccountingRobot
             }
             else
             {
+                Console.Out.WriteLine("Cache file is empty. Updating ...");
                 var values = GetList(from, to);
                 Utils.WriteCacheFile(cacheFilePath, values);
                 Console.Out.WriteLine("Successfully wrote file to {0}", cacheFilePath);

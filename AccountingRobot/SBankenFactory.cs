@@ -27,6 +27,14 @@ namespace AccountingRobot
 
         protected override string CacheFileNamePrefix { get { return "SBanken Transactions"; } }
 
+        protected override DateTime ForcedUpdateFromDate
+        {
+            get
+            {
+                return new Date().FirstDayOfTheYear;
+            }
+        }
+
         public override List<SBankenTransaction> GetCombinedUpdatedAndExisting(FileDate lastCacheFileInfo, DateTime from, DateTime to)
         {
             // we have to combine two files:

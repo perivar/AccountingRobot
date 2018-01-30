@@ -18,6 +18,14 @@ namespace AccountingRobot
 
         protected override string CacheFileNamePrefix { get { return "Stripe Transactions"; } }
 
+        protected override DateTime ForcedUpdateFromDate
+        {
+            get
+            {
+                return new Date().FirstDayOfTheYear;
+            }
+        }
+
         public override List<StripeTransaction> GetCombinedUpdatedAndExisting(FileDate lastCacheFileInfo, DateTime from, DateTime to)
         {
             // we have to combine two files:
