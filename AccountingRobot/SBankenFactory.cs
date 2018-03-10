@@ -124,7 +124,8 @@ namespace AccountingRobot
             // RFC3339 / ISO8601 with 3 decimal places
             // yyyy-MM-ddTHH:mm:ss.fffK            
             string querySuffix = string.Format(CultureInfo.InvariantCulture, "?startDate={0:yyyy-MM-ddTHH:mm:ss.fffK}&endDate={1:yyyy-MM-ddTHH:mm:ss.fffK}", from, to);
-            var transactionResponse = await httpClient.GetAsync($"{bankBasePath}/api/v1/Transactions/{customerId}/{accountNumber}{querySuffix}");
+            //var transactionResponse = await httpClient.GetAsync($"{bankBasePath}/api/v1/Transactions/{customerId}/{accountNumber}{querySuffix}");
+            var transactionResponse = await httpClient.GetAsync($"{bankBasePath}/api/v2/Transactions/{customerId}/{accountNumber}{querySuffix}");
             var transactionResult = await transactionResponse.Content.ReadAsStringAsync();
 
             // parse json
@@ -138,6 +139,17 @@ namespace AccountingRobot
                 var transactionType = transaction.transactionType;
                 var accountingDate = transaction.accountingDate;
                 var interestDate = transaction.interestDate;
+
+                if ( (bool)transaction.cardDetailsSpecified)
+                {
+                    var cardDatailsNumber = transaction.cardDetails.cardNumber;
+                    var cardDatailsCurrencyAmount = transaction.cardDetails.currencyAmount;
+                    var cardDatailsCurrencyRate = transaction.cardDetails.currencyRate;
+                    var cardDatailsCurrencyCode = transaction.cardDetails.originalCurrencyCode;
+                    var cardDatailsMerchantName = transaction.cardDetails.merchantName;
+                    var cardDatailsPurchaseDate = transaction.cardDetails.purchaseDate;
+                    var cardDatailsTransactionId = transaction.cardDetails.transactionId;
+                }
 
                 var sBankenTransaction = new SBankenTransaction();
                 sBankenTransaction.TransactionDate = accountingDate;
