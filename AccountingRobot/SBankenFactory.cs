@@ -137,26 +137,35 @@ namespace AccountingRobot
                 var amount = transaction.amount;
                 var text = transaction.text;
                 var transactionType = transaction.transactionType;
+                var transactionTypeText = transaction.transactionTypeText;
                 var accountingDate = transaction.accountingDate;
                 var interestDate = transaction.interestDate;
-
-                if ( (bool)transaction.cardDetailsSpecified)
-                {
-                    var cardDatailsNumber = transaction.cardDetails.cardNumber;
-                    var cardDatailsCurrencyAmount = transaction.cardDetails.currencyAmount;
-                    var cardDatailsCurrencyRate = transaction.cardDetails.currencyRate;
-                    var cardDatailsCurrencyCode = transaction.cardDetails.originalCurrencyCode;
-                    var cardDatailsMerchantName = transaction.cardDetails.merchantName;
-                    var cardDatailsPurchaseDate = transaction.cardDetails.purchaseDate;
-                    var cardDatailsTransactionId = transaction.cardDetails.transactionId;
-                }
 
                 var sBankenTransaction = new SBankenTransaction();
                 sBankenTransaction.TransactionDate = accountingDate;
                 sBankenTransaction.InterestDate = interestDate;
                 sBankenTransaction.ArchiveReference = transactionId;
-                sBankenTransaction.Type = transactionType;
+                sBankenTransaction.Type = transactionTypeText;
                 sBankenTransaction.Text = text;
+
+                // check if card details was specified
+                if ((bool)transaction.cardDetailsSpecified)
+                {
+                    var cardDatailsCardNumber = transaction.cardDetails.cardNumber;
+                    var cardDatailsCurrencyAmount = transaction.cardDetails.currencyAmount;
+                    var cardDatailsCurrencyRate = transaction.cardDetails.currencyRate;
+                    var cardDatailsCurrencyCode = transaction.cardDetails.originalCurrencyCode;
+                    var cardDatailsMerchantCategoryCode = transaction.cardDetails.merchantCategoryCode;
+                    var cardDatailsMerchantName = transaction.cardDetails.merchantName;
+                    var cardDatailsPurchaseDate = transaction.cardDetails.purchaseDate;
+                    var cardDatailsTransactionId = transaction.cardDetails.transactionId;
+
+                    sBankenTransaction.ExternalPurchaseDate = cardDatailsPurchaseDate;
+                    sBankenTransaction.ExternalPurchaseAmount = cardDatailsCurrencyAmount;
+                    sBankenTransaction.ExternalPurchaseCurrency = cardDatailsCurrencyCode;
+                    sBankenTransaction.ExternalPurchaseVendor = cardDatailsMerchantName;
+                    sBankenTransaction.ExternalPurchaseExchangeRate = cardDatailsCurrencyRate;
+                }
 
                 // set account change
                 sBankenTransaction.AccountChange = amount;

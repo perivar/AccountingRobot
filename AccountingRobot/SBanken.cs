@@ -12,6 +12,22 @@ namespace AccountingRobot
 {
     public static class SBanken
     {
+        public static SkandiabankenBankStatement GetBankStatementFromTransactions(List<SBankenTransaction> sBankenTransactions)
+        {
+            var bankStatment = new SkandiabankenBankStatement
+            {
+                Transactions = sBankenTransactions,
+                IncomingBalanceDate = DateTime.MinValue,
+                IncomingBalanceLabel = null,
+                IncomingBalance = 0,
+                OutgoingBalanceDate = DateTime.MinValue,
+                OutgoingBalanceLabel = null,
+                OutgoingBalance = 0
+            };
+
+            return bankStatment;
+        }
+
         public static SkandiabankenBankStatement GetLatestBankStatement(bool forceUpdate = false)
         {
             string cacheDir = ConfigurationManager.AppSettings["CacheDir"];

@@ -35,8 +35,9 @@ namespace AccountingRobot
             customerNames = customerNames.Distinct().ToList();
 
             // find latest skandiabanken transaction spreadsheet
-            var sBankenTransactions = SBankenFactory.Instance.GetLatest(true);
             var sBankenBankStatement = SBanken.GetLatestBankStatement();
+            //var sBankenTransactions = SBankenFactory.Instance.GetLatest(true);
+            //var sBankenBankStatement = SBanken.GetBankStatementFromTransactions(sBankenTransactions);
             var accountingBankItems = ProcessBankAccountStatement(sBankenBankStatement, customerNames, stripeTransactions, paypalTransactions);
 
             // merge into one list
@@ -67,7 +68,7 @@ namespace AccountingRobot
                     string filePath = Path.Combine(accountingFileDir, accountingFileName);
 
                     File.Move(lastAccountingFileInfo.FilePath, filePath);
-                    
+
                     Console.Out.WriteLine("Successfully renamed accounting file!");
                 }
 
@@ -801,6 +802,7 @@ namespace AccountingRobot
 
                 // extract properties from the transaction text
                 skandiabankenTransaction.ExtractAccountingInformation();
+                //skandiabankenTransaction.ExtractAccountingInformationV2();
                 var accountingType = skandiabankenTransaction.AccountingType;
                 accountingItem.AccountingType = skandiabankenTransaction.GetAccountingTypeString();
 

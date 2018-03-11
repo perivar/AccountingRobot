@@ -132,7 +132,7 @@ namespace AccountingRobot
             return accountingTypeString;
         }
 
-        private Tuple<int,int> ParseDayAndMonth(string dayAndMonth)
+        private Tuple<int, int> ParseDayAndMonth(string dayAndMonth)
         {
             var splitted = dayAndMonth.Split('.');
             int day = int.Parse(splitted.First());
@@ -192,6 +192,118 @@ namespace AccountingRobot
                 ExternalPurchaseCurrency = currency;
                 ExternalPurchaseVendor = vendor;
                 ExternalPurchaseExchangeRate = ExcelUtils.GetDecimalFromExcelCurrencyString(exchangeRate);
+
+                if (vendor.CaseInsensitiveContains("Wazalo")
+                    || vendor.CaseInsensitiveContains("Shopifycomc"))
+                {
+                    this.AccountingType = AccountingTypeEnum.CostOfWebShop;
+                }
+                else if (vendor.CaseInsensitiveContains("Facebk"))
+                {
+                    this.AccountingType = AccountingTypeEnum.CostOfAdvertising;
+                }
+                else if (vendor.CaseInsensitiveContains("Gandi"))
+                {
+                    this.AccountingType = AccountingTypeEnum.CostOfDomain;
+                }
+                else if (vendor.CaseInsensitiveContains("Scaleway"))
+                {
+                    this.AccountingType = AccountingTypeEnum.CostOfServer;
+                }
+                else if (vendor.CaseInsensitiveContains("AliExpress"))
+                {
+                    this.AccountingType = AccountingTypeEnum.CostOfGoods;
+                }
+                else
+                {
+                    this.AccountingType = AccountingTypeEnum.CostUnknown;
+                }
+
+                if (AccountChange >= 0)
+                {
+                    // not a purchase, but a return
+                    this.AccountingType = AccountingTypeEnum.IncomeReturn;
+                }
+                return;
+            }
+
+            // if not a purchase, check if it is a transfer
+            var matchTransfer = transferPattern.Match(Text);
+            if (matchTransfer.Success)
+            {
+                var vendor = matchTransfer.Groups[1].Value.ToString();
+                var date = matchTransfer.Groups[2].Value.ToString();
+
+                // fix date
+                DateTime purchaseDate = DateTime.ParseExact(date, "dd.MM.yy", CultureInfo.InvariantCulture);
+
+                // store properties
+                ExternalPurchaseDate = purchaseDate;
+                ExternalPurchaseVendor = vendor;
+
+                if (vendor.CaseInsensitiveContains("The Currency Cloud"))
+                {
+                    this.AccountingType = AccountingTypeEnum.TransferStripe;
+                }
+                else if (vendor.CaseInsensitiveContains("Paypal Pte Ltd"))
+                {
+                    this.AccountingType = AccountingTypeEnum.TransferPaypal;
+                }
+                else
+                {
+                    this.AccountingType = AccountingTypeEnum.TransferUnknown;
+                }
+                return;
+            }
+
+            // if neither match for purchase or transfer
+            if (AccountChange > 0)
+            {
+                this.AccountingType = AccountingTypeEnum.IncomeUnknown;
+            }
+            else
+            {
+                if (Text.CaseInsensitiveContains("Gandi"))
+                {
+                    this.AccountingType = AccountingTypeEnum.CostOfDomain;
+                }
+                else if (Text.CaseInsensitiveContains("Prøvekjøp"))
+                {
+                    this.AccountingType = AccountingTypeEnum.CostOfTryouts;
+                }
+                else
+                {
+                    this.AccountingType = AccountingTypeEnum.CostUnknown;
+                }
+            }
+        }
+
+        public void ExtractAccountingInformationV2()
+        {
+            if (Type.Equals("KREDITRTE"))
+            {
+                this.AccountingType = AccountingTypeEnum.IncomeInterest;
+                this.Type = "Kreditrente";
+                return;
+            }
+            else if (Type.Equals("GEBYR"))
+            {
+                this.AccountingType = AccountingTypeEnum.CostOfBank;
+                this.Type = "Avgift";
+                return;
+            }
+            else if (Type.Equals("NETTGIRO"))
+            {
+                this.AccountingType = AccountingTypeEnum.CostOfInvoice;
+                this.Type = "Giro m/ KID";
+                return;
+            }
+
+            // check if it is a purchase or return
+            if (Type.Equals("VISA VARE"))
+            {
+                this.Type = "Visa";
+                var vendor = ExternalPurchaseVendor;
 
                 if (vendor.CaseInsensitiveContains("Wazalo")
                     || vendor.CaseInsensitiveContains("Shopifycomc"))
