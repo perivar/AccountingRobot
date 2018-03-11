@@ -998,7 +998,7 @@ namespace AccountingRobot
                         case SBankenTransaction.AccountingTypeEnum.CostOfInvoice:
                             if (skandiabankenTransaction.Text.CaseInsensitiveContains("Merverdiavgift"))
                             {
-                                accountingItem.VATPurchase = -skandiabankenTransaction.AccountChange;
+                                accountingItem.VATSales = -skandiabankenTransaction.AccountChange;
                                 accountingItem.ErrorMessage = "Please add VAT payment period";
                             }
                             break;
