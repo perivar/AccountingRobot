@@ -1277,7 +1277,9 @@ namespace AccountingRobot
             else
             {
                 Console.WriteLine("\tERROR: NO OBERLO ORDERS FOUND!");
-                accountingItem.ErrorMessage = "Oberlo: No orders found";
+                var orderIds = string.Join(", ", Array.ConvertAll(aliExpressOrderList.ToArray(), i => i.OrderId));
+                var orderCustomers = string.Join(", ", Array.ConvertAll(aliExpressOrderList.ToArray(), i => i.ContactName));
+                accountingItem.ErrorMessage = string.Format("Oberlo: No shopify order found for order {0} ({1})", orderIds, orderCustomers);
                 accountingItem.NumPurchase = "NOT FOUND";
             }
         }

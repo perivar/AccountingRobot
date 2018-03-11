@@ -26,7 +26,7 @@ namespace AccountingRobot
             IncomeInterest
         };
 
-        private static Regex purchasePattern = new Regex(@"(\*0463)\s(\d+\.\d+)\s(\w+)\s(\d+\.\d+)\s([\w\.\*\s]+)\s(Kurs\:)\s(\d+\.\d+)", RegexOptions.Compiled);
+        private static Regex purchasePattern = new Regex(@"(\*\d{4})\s(\d+\.\d+)\s(\w+)\s(\d+\.\d+)\s([\w\.\*\s]+)\s(Kurs\:)\s(\d+\.\d+)", RegexOptions.Compiled);
         private static Regex transferPattern = new Regex(@"Fra\:\s([\w\s]+)\sBetalt\:\s(\d+\.\d+.\d+)", RegexOptions.Compiled);
 
         public DateTime TransactionDate { get; set; }
