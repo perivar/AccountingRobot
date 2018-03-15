@@ -14,11 +14,14 @@ namespace AccountingRobot
     {
         public static SkandiabankenBankStatement GetBankStatementFromTransactions(List<SBankenTransaction> sBankenTransactions)
         {
+            var date = new Date();
+            var firstDayOfTheYear = date.FirstDayOfTheYear;
+
             var bankStatment = new SkandiabankenBankStatement
             {
                 Transactions = sBankenTransactions,
-                IncomingBalanceDate = DateTime.MinValue,
-                IncomingBalanceLabel = null,
+                IncomingBalanceDate = firstDayOfTheYear,
+                IncomingBalanceLabel = string.Format("INNGÅENDE SALDO {0:dd.MM.yyyy}", firstDayOfTheYear),
                 IncomingBalance = 0,
                 OutgoingBalanceDate = DateTime.MinValue,
                 OutgoingBalanceLabel = null,

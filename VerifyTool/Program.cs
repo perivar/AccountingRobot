@@ -148,7 +148,7 @@ namespace VerifyTool
                     var accountingItem = new AccountingItem();
                     accountingItem.Date = ExcelUtils.GetExcelField<DateTime>(row, "Dato");
                     accountingItem.Number = ExcelUtils.GetExcelField<int>(row, "Bilagsnr.");
-                    accountingItem.ArchiveReference = ExcelUtils.GetExcelField<long>(row, "Arkivreferanse");
+                    accountingItem.ArchiveReference = ExcelUtils.GetExcelField<long>(row, "Arkivreferanse").ToString();
                     accountingItem.TransactionID = ExcelUtils.GetExcelField<string>(row, "TransaksjonsId");
                     accountingItem.Type = ExcelUtils.GetExcelField<string>(row, "Type");
                     accountingItem.AccountingType = ExcelUtils.GetExcelField<string>(row, "Regnskapstype");

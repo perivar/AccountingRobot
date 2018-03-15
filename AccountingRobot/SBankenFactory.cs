@@ -43,7 +43,7 @@ namespace AccountingRobot
             var newSBankenTransactions = GetSBankenTransactions(from, to);
             var originalSBankenTransactions = Utils.ReadCacheFile<SBankenTransaction>(lastCacheFileInfo.FilePath);
 
-            // copy all the original PayPal transactions into a new file, except entries that are 
+            // copy all the original SBanken transactions into a new file, except entries that are 
             // from the from date or newer
             var updatedSBankenTransactions = originalSBankenTransactions.Where(p => p.TransactionDate < from).ToList();
 
@@ -69,10 +69,10 @@ namespace AccountingRobot
             var sBankenTransactions = new List<SBankenTransaction>();
 
             /** Setup constants */
-            var discoveryEndpoint = "https://api.sbanken.no/identityserver";
-            var apiBaseAddress = "https://api.sbanken.no";
-            var bankBasePath = "/bank";
-            var customersBasePath = "/customers";
+            const string discoveryEndpoint = "https://api.sbanken.no/identityserver";
+            const string apiBaseAddress = "https://api.sbanken.no";
+            const string bankBasePath = "/bank";
+            const string customersBasePath = "/customers";
 
             // First: get the OpenId configuration from Sbanken.
             var discoClient = new DiscoveryClient(discoveryEndpoint);
@@ -148,6 +148,9 @@ namespace AccountingRobot
                 sBankenTransaction.Type = transactionTypeText;
                 sBankenTransaction.Text = text;
 
+                var date = new Date();
+                var currentDate = date.CurrentDate;
+
                 // check if card details was specified
                 if ((bool)transaction.cardDetailsSpecified)
                 {
@@ -165,6 +168,13 @@ namespace AccountingRobot
                     sBankenTransaction.ExternalPurchaseCurrency = cardDatailsCurrencyCode;
                     sBankenTransaction.ExternalPurchaseVendor = cardDatailsMerchantName;
                     sBankenTransaction.ExternalPurchaseExchangeRate = cardDatailsCurrencyRate;
+
+                    // NOTE! fix a likely bug in the API where the external purchase date is the wrong year
+                    if (sBankenTransaction.ExternalPurchaseDate.Year == currentDate.Year
+                        && sBankenTransaction.ExternalPurchaseDate.Month > currentDate.Month)
+                    {
+                        sBankenTransaction.ExternalPurchaseDate = sBankenTransaction.ExternalPurchaseDate.AddYears(-1);
+                    }
                 }
 
                 // set account change

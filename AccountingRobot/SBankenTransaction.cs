@@ -20,6 +20,7 @@ namespace AccountingRobot
             CostUnknown,
             TransferStripe,
             TransferPaypal,
+            TransferVipps,
             TransferUnknown,
             IncomeUnknown,
             IncomeReturn,
@@ -278,31 +279,36 @@ namespace AccountingRobot
             }
         }
 
-        public void ExtractAccountingInformationV2()
+        public void ExtractAccountingInformationAPI()
         {
             if (Type.Equals("KREDITRTE"))
             {
                 this.AccountingType = AccountingTypeEnum.IncomeInterest;
-                this.Type = "Kreditrente";
+                //this.Type = "Kreditrente";
                 return;
             }
             else if (Type.Equals("GEBYR"))
             {
                 this.AccountingType = AccountingTypeEnum.CostOfBank;
-                this.Type = "Avgift";
+                //this.Type = "Avgift";
                 return;
             }
             else if (Type.Equals("NETTGIRO"))
             {
                 this.AccountingType = AccountingTypeEnum.CostOfInvoice;
-                this.Type = "Giro m/ KID";
+                //this.Type = "Giro m/ KID";
+                return;
+            }          
+            else if (Type.Equals("OVFNETTB"))
+            {
+                this.AccountingType = AccountingTypeEnum.TransferUnknown;
+                //this.Type = "Overføring Nettbank";
                 return;
             }
 
             // check if it is a purchase or return
             if (Type.Equals("VISA VARE"))
             {
-                this.Type = "Visa";
                 var vendor = ExternalPurchaseVendor;
 
                 if (vendor.CaseInsensitiveContains("Wazalo")

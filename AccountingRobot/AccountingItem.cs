@@ -9,7 +9,7 @@ namespace AccountingRobot
         public DateTime Date { get; set; }
 
         public int Number { get; set; }
-        public long ArchiveReference { get; set; }
+        public string ArchiveReference { get; set; }
         public string TransactionID { get; set; }
         public string Type { get; set; } // Overføring (intern), Overførsel (ekstern), Visa, Avgift
         public string AccountingType { get; set; }
@@ -71,16 +71,16 @@ namespace AccountingRobot
         {
             if (other == null) return false;
 
-            return 
+            return
                 ArchiveReference == other.ArchiveReference &&
                 //TransactionID == other.TransactionID &&
                 //Type == other.Type &&
                 Date == other.Date &&
-                string.Equals(Text, other.Text) &&
-                //AccountPaypal == other.AccountPaypal &&
-                //AccountStripe == other.AccountStripe &&
-                //AccountVipps == other.AccountVipps &&
-                AccountBank == other.AccountBank;
+                string.Equals(Text, other.Text);// &&
+                                                //AccountPaypal == other.AccountPaypal &&
+                                                //AccountStripe == other.AccountStripe &&
+                                                //AccountVipps == other.AccountVipps &&
+                                                //AccountBank == other.AccountBank;
         }
 
         public override bool Equals(object obj)
@@ -98,7 +98,7 @@ namespace AccountingRobot
             unchecked
             {
                 var hashCode = 13;
-                hashCode = (hashCode * 397) ^ ArchiveReference.GetHashCode();
+                hashCode = (hashCode * 397) ^ (!string.IsNullOrEmpty(ArchiveReference) ? ArchiveReference.GetHashCode() : 0);
                 //hashCode = (hashCode * 397) ^ (!string.IsNullOrEmpty(TransactionID) ? TransactionID.GetHashCode() : 0);                
                 //hashCode = (hashCode * 397) ^ (!string.IsNullOrEmpty(Type) ? Type.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (!string.IsNullOrEmpty(Text) ? Text.GetHashCode() : 0);
@@ -106,7 +106,7 @@ namespace AccountingRobot
                 //hashCode = (hashCode * 397) ^ AccountPaypal.GetHashCode();
                 //hashCode = (hashCode * 397) ^ AccountStripe.GetHashCode();
                 //hashCode = (hashCode * 397) ^ AccountVipps.GetHashCode();
-                hashCode = (hashCode * 397) ^ AccountBank.GetHashCode();
+                //hashCode = (hashCode * 397) ^ AccountBank.GetHashCode();
 
                 return hashCode;
             }

@@ -21,10 +21,10 @@ namespace AccountingRobot
             // prepopulate lookup lists
             Console.Out.WriteLine("Prepopulating Lookup Lists ...");
 
-            var stripeTransactions = StripeChargeFactory.Instance.GetLatest(true);
+            var stripeTransactions = StripeChargeFactory.Instance.GetLatest(false);
             Console.Out.WriteLine("Successfully read Stripe transactions ...");
 
-            var paypalTransactions = PayPalFactory.Instance.GetLatest(true);
+            var paypalTransactions = PayPalFactory.Instance.GetLatest(false);
             Console.Out.WriteLine("Successfully read PayPal transactions ...");
 
             // process the transactions and create accounting overview
@@ -35,9 +35,9 @@ namespace AccountingRobot
             customerNames = customerNames.Distinct().ToList();
 
             // find latest skandiabanken transaction spreadsheet
-            var sBankenBankStatement = SBanken.GetLatestBankStatement();
-            //var sBankenTransactions = SBankenFactory.Instance.GetLatest(true);
-            //var sBankenBankStatement = SBanken.GetBankStatementFromTransactions(sBankenTransactions);
+            //var sBankenBankStatement = SBanken.GetLatestBankStatement();
+            var sBankenTransactions = SBankenFactory.Instance.GetLatest(true);
+            var sBankenBankStatement = SBanken.GetBankStatementFromTransactions(sBankenTransactions);
             var accountingBankItems = ProcessBankAccountStatement(sBankenBankStatement, customerNames, stripeTransactions, paypalTransactions);
 
             // merge into one list
@@ -186,7 +186,7 @@ namespace AccountingRobot
                     var accountingItem = new AccountingItem();
                     accountingItem.Date = ExcelUtils.GetExcelField<DateTime>(row, "Dato");
                     accountingItem.Number = ExcelUtils.GetExcelField<int>(row, "Bilagsnr.");
-                    accountingItem.ArchiveReference = ExcelUtils.GetExcelField<long>(row, "Arkivreferanse");
+                    accountingItem.ArchiveReference = ExcelUtils.GetExcelField<string>(row, "Arkivreferanse");
                     accountingItem.TransactionID = ExcelUtils.GetExcelField<string>(row, "TransaksjonsId");
                     accountingItem.Type = ExcelUtils.GetExcelField<string>(row, "Type");
                     accountingItem.AccountingType = ExcelUtils.GetExcelField<string>(row, "Regnskapstype");
@@ -286,7 +286,7 @@ namespace AccountingRobot
                         newRow.Cell(2).Value = newAccountingElements[newRowCounter].Periode;
                         newRow.Cell(3).Value = newAccountingElements[newRowCounter].Date;
                         newRow.Cell(4).Value = newAccountingElements[newRowCounter].Number;
-                        newRow.Cell(5).Value = newAccountingElements[newRowCounter].ArchiveReference;
+                        newRow.Cell(5).SetValue<string>(newAccountingElements[newRowCounter].ArchiveReference);
                         newRow.Cell(6).Value = newAccountingElements[newRowCounter].TransactionID;
                         newRow.Cell(7).Value = newAccountingElements[newRowCounter].Type;
                         newRow.Cell(8).Value = newAccountingElements[newRowCounter].AccountingType;
@@ -381,7 +381,7 @@ namespace AccountingRobot
                     var accountingItem = new AccountingItem();
                     accountingItem.Date = ExcelUtils.GetExcelField<DateTime>(row, "Dato");
                     accountingItem.Number = ExcelUtils.GetExcelField<int>(row, "Bilagsnr.");
-                    accountingItem.ArchiveReference = ExcelUtils.GetExcelField<long>(row, "Arkivreferanse");
+                    accountingItem.ArchiveReference = ExcelUtils.GetExcelField<string>(row, "Arkivreferanse");
                     accountingItem.TransactionID = ExcelUtils.GetExcelField<string>(row, "TransaksjonsId");
                     accountingItem.Type = ExcelUtils.GetExcelField<string>(row, "Type");
                     accountingItem.AccountingType = ExcelUtils.GetExcelField<string>(row, "Regnskapstype");
@@ -618,7 +618,7 @@ namespace AccountingRobot
             dt.Columns.Add("Periode", typeof(int));
             dt.Columns.Add("Dato", typeof(DateTime));
             dt.Columns.Add("Bilagsnr.", typeof(int));
-            dt.Columns.Add("Arkivreferanse", typeof(long));
+            dt.Columns.Add("Arkivreferanse", typeof(string));
             dt.Columns.Add("TransaksjonsId", typeof(string));
             dt.Columns.Add("Type", typeof(string));
             dt.Columns.Add("Regnskapstype", typeof(string));
@@ -755,7 +755,7 @@ namespace AccountingRobot
             var to = date.CurrentDate;
 
             // prepopulate some lookup lists
-            var stripePayoutTransactions = StripePayoutFactory.Instance.GetLatest(true);
+            var stripePayoutTransactions = StripePayoutFactory.Instance.GetLatest(false);
             Console.Out.WriteLine("Successfully read Stripe payout transactions ...");
 
             var oberloOrders = OberloFactory.Instance.GetLatest();
@@ -772,7 +772,8 @@ namespace AccountingRobot
             incomingBalance.Date = skandiabankenBankStatement.IncomingBalanceDate;
             incomingBalance.Text = skandiabankenBankStatement.IncomingBalanceLabel;
             incomingBalance.AccountingType = "INNGÅENDE SALDO";
-            incomingBalance.Type = "Saldo";
+            incomingBalance.Type = "SALDO";
+            incomingBalance.ErrorMessage = "Please manually add the incoming balance.";
             accountingList.Add(incomingBalance);
 
             // define hashes so we can track used order numbers and transaction Ids
@@ -792,22 +793,22 @@ namespace AccountingRobot
                     skandiabankenTransaction.TransactionDate.Day,
                     23, 59, 00);
 
-                accountingItem.ArchiveReference = skandiabankenTransaction.ArchiveReference;
+                // extract properties from the transaction text
+                //skandiabankenTransaction.ExtractAccountingInformation();
+                skandiabankenTransaction.ExtractAccountingInformationAPI();
+                var accountingType = skandiabankenTransaction.AccountingType;
+                accountingItem.AccountingType = skandiabankenTransaction.GetAccountingTypeString();
+
+                accountingItem.ArchiveReference = skandiabankenTransaction.ArchiveReference.ToString();
                 accountingItem.Type = skandiabankenTransaction.Type;
 
-                if (accountingItem.ArchiveReference == 50975003532)
+                if (accountingItem.ArchiveReference.Equals("50975003532"))
                 {
                     // breakpoint here
                 }
 
-                // extract properties from the transaction text
-                skandiabankenTransaction.ExtractAccountingInformation();
-                //skandiabankenTransaction.ExtractAccountingInformationV2();
-                var accountingType = skandiabankenTransaction.AccountingType;
-                accountingItem.AccountingType = skandiabankenTransaction.GetAccountingTypeString();
-
                 // 1. If purchase or return from purchase 
-                if (skandiabankenTransaction.Type.Equals("Visa") && (
+                if (skandiabankenTransaction.Type.Equals("VISA VARE") && (
                     accountingType == SBankenTransaction.AccountingTypeEnum.CostOfWebShop ||
                     accountingType == SBankenTransaction.AccountingTypeEnum.CostOfAdvertising ||
                     accountingType == SBankenTransaction.AccountingTypeEnum.CostOfDomain ||
@@ -816,7 +817,7 @@ namespace AccountingRobot
                 {
 
                     Console.WriteLine("{0}", skandiabankenTransaction);
-                    accountingItem.Text = string.Format("{0:dd.MM.yyyy} {1} {2} {3} (Kurs: {4})", skandiabankenTransaction.ExternalPurchaseDate, skandiabankenTransaction.ExternalPurchaseVendor, skandiabankenTransaction.ExternalPurchaseAmount, skandiabankenTransaction.ExternalPurchaseCurrency, skandiabankenTransaction.ExternalPurchaseExchangeRate);
+                    accountingItem.Text = string.Format("{0:dd.MM.yyyy} {1} {2} {3:C} (Kurs: {4})", skandiabankenTransaction.ExternalPurchaseDate, skandiabankenTransaction.ExternalPurchaseVendor, skandiabankenTransaction.ExternalPurchaseAmount, skandiabankenTransaction.ExternalPurchaseCurrency, skandiabankenTransaction.ExternalPurchaseExchangeRate);
                     accountingItem.PurchaseOtherCurrency = skandiabankenTransaction.ExternalPurchaseAmount;
                     accountingItem.OtherCurrency = skandiabankenTransaction.ExternalPurchaseCurrency.ToUpper();
                     accountingItem.AccountBank = skandiabankenTransaction.AccountChange;
@@ -835,11 +836,11 @@ namespace AccountingRobot
                 }
 
                 // 1. If AliExpress purchase
-                else if (skandiabankenTransaction.Type.Equals("Visa") &&
+                else if (skandiabankenTransaction.Type.Equals("VISA VARE") &&
                     accountingType == SBankenTransaction.AccountingTypeEnum.CostOfGoods)
                 {
                     Console.WriteLine("{0}", skandiabankenTransaction);
-                    accountingItem.Text = string.Format("{0:dd.MM.yyyy} {1} {2} {3} (Kurs: {4})", skandiabankenTransaction.ExternalPurchaseDate, skandiabankenTransaction.ExternalPurchaseVendor, skandiabankenTransaction.ExternalPurchaseAmount, skandiabankenTransaction.ExternalPurchaseCurrency, skandiabankenTransaction.ExternalPurchaseExchangeRate);
+                    accountingItem.Text = string.Format("{0:dd.MM.yyyy} {1} {2} {3:C} (Kurs: {4})", skandiabankenTransaction.ExternalPurchaseDate, skandiabankenTransaction.ExternalPurchaseVendor, skandiabankenTransaction.ExternalPurchaseAmount, skandiabankenTransaction.ExternalPurchaseCurrency, skandiabankenTransaction.ExternalPurchaseExchangeRate);
                     accountingItem.PurchaseOtherCurrency = skandiabankenTransaction.ExternalPurchaseAmount;
                     accountingItem.OtherCurrency = skandiabankenTransaction.ExternalPurchaseCurrency.ToUpper();
                     accountingItem.AccountBank = skandiabankenTransaction.AccountChange;
@@ -1031,16 +1032,21 @@ namespace AccountingRobot
             foreach (var shopifyOrder in shopifyOrders)
             {
                 // skip, not paid (pending), cancelled (voided) and fully refunded orders (refunded)
-                if (shopifyOrder.FinancialStatus.Equals("refunded")
+                if (shopifyOrder.FinancialStatus.Equals("refunded_IGNORE")
                     || shopifyOrder.FinancialStatus.Equals("voided")
                     || shopifyOrder.FinancialStatus.Equals("pending")
                     || shopifyOrder.Cancelled == true
                     ) continue;
 
+                if (shopifyOrder.FinancialStatus.Equals("refunded"))
+                {
+                    //
+                }
+
                 // define accounting item
                 var accountingItem = new AccountingItem();
                 accountingItem.Date = shopifyOrder.CreatedAt;
-                accountingItem.ArchiveReference = shopifyOrder.Id;
+                accountingItem.ArchiveReference = shopifyOrder.Id.ToString();
                 accountingItem.Type = string.Format("{0} {1}", shopifyOrder.FinancialStatus, shopifyOrder.FulfillmentStatus);
                 accountingItem.AccountingType = "SHOPIFY";
                 accountingItem.Text = string.Format("SALG {0} {1}", shopifyOrder.CustomerName, shopifyOrder.PaymentId);
