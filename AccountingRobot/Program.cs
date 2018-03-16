@@ -186,7 +186,7 @@ namespace AccountingRobot
                     var accountingItem = new AccountingItem();
                     accountingItem.Date = ExcelUtils.GetExcelField<DateTime>(row, "Dato");
                     accountingItem.Number = ExcelUtils.GetExcelField<int>(row, "Bilagsnr.");
-                    accountingItem.ArchiveReference = ExcelUtils.GetExcelField<string>(row, "Arkivreferanse");
+                    accountingItem.ArchiveReference = ExcelUtils.GetExcelField<long>(row, "Arkivreferanse");
                     accountingItem.TransactionID = ExcelUtils.GetExcelField<string>(row, "TransaksjonsId");
                     accountingItem.Type = ExcelUtils.GetExcelField<string>(row, "Type");
                     accountingItem.AccountingType = ExcelUtils.GetExcelField<string>(row, "Regnskapstype");
@@ -286,7 +286,7 @@ namespace AccountingRobot
                         newRow.Cell(2).Value = newAccountingElements[newRowCounter].Periode;
                         newRow.Cell(3).Value = newAccountingElements[newRowCounter].Date;
                         newRow.Cell(4).Value = newAccountingElements[newRowCounter].Number;
-                        newRow.Cell(5).SetValue<string>(newAccountingElements[newRowCounter].ArchiveReference);
+                        newRow.Cell(5).Value = newAccountingElements[newRowCounter].ArchiveReference;
                         newRow.Cell(6).Value = newAccountingElements[newRowCounter].TransactionID;
                         newRow.Cell(7).Value = newAccountingElements[newRowCounter].Type;
                         newRow.Cell(8).Value = newAccountingElements[newRowCounter].AccountingType;
@@ -381,7 +381,7 @@ namespace AccountingRobot
                     var accountingItem = new AccountingItem();
                     accountingItem.Date = ExcelUtils.GetExcelField<DateTime>(row, "Dato");
                     accountingItem.Number = ExcelUtils.GetExcelField<int>(row, "Bilagsnr.");
-                    accountingItem.ArchiveReference = ExcelUtils.GetExcelField<string>(row, "Arkivreferanse");
+                    accountingItem.ArchiveReference = ExcelUtils.GetExcelField<long>(row, "Arkivreferanse");
                     accountingItem.TransactionID = ExcelUtils.GetExcelField<string>(row, "TransaksjonsId");
                     accountingItem.Type = ExcelUtils.GetExcelField<string>(row, "Type");
                     accountingItem.AccountingType = ExcelUtils.GetExcelField<string>(row, "Regnskapstype");
@@ -549,7 +549,11 @@ namespace AccountingRobot
 
             // set column formats
             row.Cell("C").Style.NumberFormat.Format = "dd.MM.yyyy";
-            row.Cell("E").Style.NumberFormat.Format = "####################";
+
+            // Arkivreferanse or ArchiveReference has so many digits 
+            // that Excel will truncate it, therefore we need to ensure
+            // that the long is stored as text and not a number
+            row.Cell("E").DataType = XLCellValues.Text;
 
             // Custom formats for numbers in Excel are entered in this format:
             // positive number format;negative number format;zero format;text format
@@ -618,7 +622,7 @@ namespace AccountingRobot
             dt.Columns.Add("Periode", typeof(int));
             dt.Columns.Add("Dato", typeof(DateTime));
             dt.Columns.Add("Bilagsnr.", typeof(int));
-            dt.Columns.Add("Arkivreferanse", typeof(string));
+            dt.Columns.Add("Arkivreferanse", typeof(long));
             dt.Columns.Add("TransaksjonsId", typeof(string));
             dt.Columns.Add("Type", typeof(string));
             dt.Columns.Add("Regnskapstype", typeof(string));
@@ -765,17 +769,6 @@ namespace AccountingRobot
             // run through the bank account transactions
             var skandiabankenTransactions = skandiabankenBankStatement.Transactions;
 
-            // add incoming balance
-            var incomingBalance = new AccountingItem();
-            incomingBalance.AccountBank = skandiabankenBankStatement.IncomingBalance;
-            incomingBalance.PersonalDeposit = -skandiabankenBankStatement.IncomingBalance;
-            incomingBalance.Date = skandiabankenBankStatement.IncomingBalanceDate;
-            incomingBalance.Text = skandiabankenBankStatement.IncomingBalanceLabel;
-            incomingBalance.AccountingType = "INNGÅENDE SALDO";
-            incomingBalance.Type = "SALDO";
-            incomingBalance.ErrorMessage = "Please manually add the incoming balance.";
-            accountingList.Add(incomingBalance);
-
             // define hashes so we can track used order numbers and transaction Ids
             var usedStripePayoutTransactionIDs = new HashSet<string>();
             var usedOrderNumbers = new HashSet<string>();
@@ -799,7 +792,7 @@ namespace AccountingRobot
                 var accountingType = skandiabankenTransaction.AccountingType;
                 accountingItem.AccountingType = skandiabankenTransaction.GetAccountingTypeString();
 
-                accountingItem.ArchiveReference = skandiabankenTransaction.ArchiveReference.ToString();
+                accountingItem.ArchiveReference = skandiabankenTransaction.ArchiveReference;
                 accountingItem.Type = skandiabankenTransaction.Type;
 
                 if (accountingItem.ArchiveReference.Equals("50975003532"))
@@ -1046,7 +1039,7 @@ namespace AccountingRobot
                 // define accounting item
                 var accountingItem = new AccountingItem();
                 accountingItem.Date = shopifyOrder.CreatedAt;
-                accountingItem.ArchiveReference = shopifyOrder.Id.ToString();
+                accountingItem.ArchiveReference = shopifyOrder.Id;
                 accountingItem.Type = string.Format("{0} {1}", shopifyOrder.FinancialStatus, shopifyOrder.FulfillmentStatus);
                 accountingItem.AccountingType = "SHOPIFY";
                 accountingItem.Text = string.Format("SALG {0} {1}", shopifyOrder.CustomerName, shopifyOrder.PaymentId);
