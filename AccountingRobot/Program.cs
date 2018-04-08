@@ -553,16 +553,16 @@ namespace AccountingRobot
             // Arkivreferanse or ArchiveReference has so many digits 
             // that Excel will truncate it, therefore we need to ensure
             // that the long is stored as text and not a number
-            row.Cell("E").DataType = XLCellValues.Text;
+            row.Cell("E").DataType = XLDataType.Text;
 
             // Custom formats for numbers in Excel are entered in this format:
             // positive number format;negative number format;zero format;text format
             row.Cell("O").Style.NumberFormat.Format = "#,##0.00;[Red]-#,##0.00;";
-            row.Cell("O").DataType = XLCellValues.Number;
+            row.Cell("O").DataType = XLDataType.Number;
 
             // set style and format for the decimal range
             row.Cells("Q", "AY").Style.NumberFormat.Format = "#,##0.00;[Red]-#,##0.00;";
-            row.Cells("Q", "AY").DataType = XLCellValues.Number;
+            row.Cells("Q", "AY").DataType = XLDataType.Number;
         }
 
         static void SetExcelTableTotalsRowFunction(IXLTable table)

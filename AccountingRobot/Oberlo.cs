@@ -45,6 +45,9 @@ namespace OberloScraper
                 username.Clear();
                 username.SendKeys(oberloUsername);
 
+                // if the above crash, it might very well be Chrome and ChromeDriver incompability
+                // please update the ChromeDriver to fit the Chrome version used.
+
                 password.Clear();
                 password.SendKeys(oberloPassword);
 

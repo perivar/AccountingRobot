@@ -61,7 +61,14 @@ namespace AccountingRobot
 
         private List<SBankenTransaction> GetSBankenTransactions(DateTime from, DateTime to)
         {
-            return GetSBankenTransactionsAsync(from, to).GetAwaiter().GetResult();
+            try
+            {
+                return GetSBankenTransactionsAsync(from, to).GetAwaiter().GetResult();
+            }
+            catch (Exception)
+            {
+                return new List<SBankenTransaction>();
+            } 
         }
 
         private async Task<List<SBankenTransaction>> GetSBankenTransactionsAsync(DateTime from, DateTime to)
@@ -98,6 +105,7 @@ namespace AccountingRobot
 
             if (tokenResponse.IsError)
             {
+                Console.WriteLine("ERROR: Couldn't authenticate with SBanken!");
                 throw new Exception(tokenResponse.ErrorDescription);
             }
 
