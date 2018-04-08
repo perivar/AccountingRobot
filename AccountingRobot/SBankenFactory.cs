@@ -69,12 +69,15 @@ namespace AccountingRobot
             {
                 Console.WriteLine("ERROR: Could not get transactions from SBanken! '{0}'", e.Message);
                 return new List<SBankenTransaction>();
-            } 
+            }
         }
 
         private async Task<List<SBankenTransaction>> GetSBankenTransactionsAsync(DateTime from, DateTime to)
         {
             var sBankenTransactions = new List<SBankenTransaction>();
+
+            // see also
+            // https://github.com/anderaus/Sbanken.DotNet/blob/master/src/Sbanken.DotNet/Http/Connection.cs
 
             /** Setup constants */
             const string discoveryEndpoint = "https://api.sbanken.no/identityserver";
@@ -100,14 +103,18 @@ namespace AccountingRobot
             // The application now knows how to talk to the token endpoint.
 
             // Second: the application authenticates against the token endpoint
-            var tokenClient = new TokenClient(discoResult.TokenEndpoint, clientId, secret);
+            // ensure basic authentication RFC2617 is used
+            // The application must authenticate itself with Sbanken's authorization server.
+            // The basic authentication scheme is used here (https://tools.ietf.org/html/rfc2617#section-2 ) 
+            var tokenClient = new TokenClient(discoResult.TokenEndpoint, clientId, secret)
+            {
+                BasicAuthenticationHeaderStyle = BasicAuthenticationHeaderStyle.Rfc2617
+            };
 
             var tokenResponse = tokenClient.RequestClientCredentialsAsync().Result;
 
             if (tokenResponse.IsError)
-            {                
-                // This might happen if the IdentityModel is upgraded beyond version 3.0.0.0
-                // For some reason only version 3.0.0.0 seem to work with the SBanken API
+            {
                 throw new Exception(tokenResponse.Error);
             }
 
