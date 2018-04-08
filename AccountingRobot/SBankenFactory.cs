@@ -65,8 +65,9 @@ namespace AccountingRobot
             {
                 return GetSBankenTransactionsAsync(from, to).GetAwaiter().GetResult();
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                Console.WriteLine("ERROR: Could not get transactions from SBanken! '{0}'", e.Message);
                 return new List<SBankenTransaction>();
             } 
         }
@@ -104,9 +105,10 @@ namespace AccountingRobot
             var tokenResponse = tokenClient.RequestClientCredentialsAsync().Result;
 
             if (tokenResponse.IsError)
-            {
-                Console.WriteLine("ERROR: Couldn't authenticate with SBanken!");
-                throw new Exception(tokenResponse.ErrorDescription);
+            {                
+                // This might happen if the IdentityModel is upgraded beyond version 3.0.0.0
+                // For some reason only version 3.0.0.0 seem to work with the SBanken API
+                throw new Exception(tokenResponse.Error);
             }
 
             // The application now has an access token.

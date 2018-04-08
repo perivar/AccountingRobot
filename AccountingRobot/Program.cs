@@ -38,6 +38,13 @@ namespace AccountingRobot
             //var sBankenBankStatement = SBanken.GetLatestBankStatement();
             var sBankenTransactions = SBankenFactory.Instance.GetLatest(true);
             var sBankenBankStatement = SBanken.GetBankStatementFromTransactions(sBankenTransactions);
+            if (sBankenBankStatement.Transactions.Count() == 0)
+            {
+                // No transactions read, quitting
+                Console.WriteLine("ERROR! No SBanken transactions read. Quitting!");
+                Console.ReadLine();
+                return;
+            }
             var accountingBankItems = ProcessBankAccountStatement(sBankenBankStatement, customerNames, stripeTransactions, paypalTransactions);
 
             // merge into one list
