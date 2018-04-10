@@ -60,7 +60,7 @@ namespace AccountingRobot
             var lastAccountingFileInfo = Utils.FindLastCacheFile(accountingFileDir, accountingFileNamePrefix, accountingDateFromToRegexPattern, "yyyy-MM-dd", "\\-");
 
             // if the cache file object has values
-            if (!lastAccountingFileInfo.Equals(default(FileDate)))
+            if (null != lastAccountingFileInfo && !lastAccountingFileInfo.Equals(default(FileDate)))
             {
                 Console.Out.WriteLine("Found an accounting spreadsheet from {0:yyyy-MM-dd}", lastAccountingFileInfo.From);
                 UpdateExcelFile(lastAccountingFileInfo.FilePath, accountingItems);
@@ -129,20 +129,21 @@ namespace AccountingRobot
                 ws.Cell(1, 34).Value = "6800";
                 ws.Cell(1, 35).Value = "6810";
                 ws.Cell(1, 36).Value = "6900";
-                ws.Cell(1, 37).Value = "7140";
-                ws.Cell(1, 38).Value = "7330";
-                ws.Cell(1, 39).Value = "7700";
-                ws.Cell(1, 40).Value = "7770";
-                ws.Cell(1, 41).Value = "7780";
-                ws.Cell(1, 42).Value = "7785";
-                ws.Cell(1, 43).Value = "7790";
-                ws.Cell(1, 44).Value = "8099";
-                ws.Cell(1, 45).Value = "8199";
-                ws.Cell(1, 46).Value = "1200";
-                ws.Cell(1, 47).Value = "1500";
+                ws.Cell(1, 37).Value = "7098";
+                ws.Cell(1, 38).Value = "7140";
+                ws.Cell(1, 39).Value = "7330";
+                ws.Cell(1, 40).Value = "7700";
+                ws.Cell(1, 41).Value = "7770";
+                ws.Cell(1, 42).Value = "7780";
+                ws.Cell(1, 43).Value = "7785";
+                ws.Cell(1, 44).Value = "7790";
+                ws.Cell(1, 45).Value = "8099";
+                ws.Cell(1, 46).Value = "8199";
+                ws.Cell(1, 47).Value = "1200";
+                ws.Cell(1, 48).Value = "1500";
 
                 // set font color for header range
-                var headerRange = ws.Range("A1:AY1");
+                var headerRange = ws.Range("A1:AZ1");
                 headerRange.Style.Font.FontColor = XLColor.White;
                 headerRange.Style.Font.Bold = true;
                 headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
@@ -166,8 +167,8 @@ namespace AccountingRobot
                 }
 
                 // resize
-                ws.Columns().AdjustToContents();  // Adjust column width
-                ws.Rows().AdjustToContents();     // Adjust row heights
+                //ws.Columns().AdjustToContents();  // Adjust column width
+                //ws.Rows().AdjustToContents();     // Adjust row heights
 
                 wb.SaveAs(filePath);
                 Console.Out.WriteLine("Successfully wrote accounting file to {0}", filePath);
@@ -229,7 +230,8 @@ namespace AccountingRobot
                     accountingItem.CostForFacilities = ExcelUtils.GetExcelField<decimal>(row, "Kontorkostnader");	// 6800 
 
                     accountingItem.CostOfData = ExcelUtils.GetExcelField<decimal>(row, "Datakostnader");	// 6810 
-                    accountingItem.CostOfPhoneInternet = ExcelUtils.GetExcelField<decimal>(row, "Telefon Internett");	// 6900
+                    accountingItem.CostOfPhoneInternetUse = ExcelUtils.GetExcelField<decimal>(row, "Telefon Internett Bruk");	// 6900
+                    accountingItem.PrivateUseOfECom = ExcelUtils.GetExcelField<decimal>(row, "Privat bruk av el.kommunikasjon");	// 7098
                     accountingItem.CostForTravelAndAllowance = ExcelUtils.GetExcelField<decimal>(row, "Reise og Diett");	// 7140
                     accountingItem.CostOfAdvertising = ExcelUtils.GetExcelField<decimal>(row, "Reklamekostnader");	// 7330
                     accountingItem.CostOfOther = ExcelUtils.GetExcelField<decimal>(row, "Diverse annet");	// 7700
@@ -329,24 +331,25 @@ namespace AccountingRobot
                         newRow.Cell(34).Value = newAccountingElements[newRowCounter].CostForFacilities;           // 6800 
 
                         newRow.Cell(35).Value = newAccountingElements[newRowCounter].CostOfData;                  // 6810 
-                        newRow.Cell(36).Value = newAccountingElements[newRowCounter].CostOfPhoneInternet;         // 6900
-                        newRow.Cell(37).Value = newAccountingElements[newRowCounter].CostForTravelAndAllowance;   // 7140
-                        newRow.Cell(38).Value = newAccountingElements[newRowCounter].CostOfAdvertising;           // 7330
-                        newRow.Cell(39).Value = newAccountingElements[newRowCounter].CostOfOther;                 // 7700
+                        newRow.Cell(36).Value = newAccountingElements[newRowCounter].CostOfPhoneInternetUse;      // 6900
+                        newRow.Cell(37).Value = newAccountingElements[newRowCounter].PrivateUseOfECom;            // 7098
+                        newRow.Cell(38).Value = newAccountingElements[newRowCounter].CostForTravelAndAllowance;   // 7140
+                        newRow.Cell(39).Value = newAccountingElements[newRowCounter].CostOfAdvertising;           // 7330
+                        newRow.Cell(40).Value = newAccountingElements[newRowCounter].CostOfOther;                 // 7700
 
-                        newRow.Cell(40).Value = newAccountingElements[newRowCounter].FeesBank;                    // 7770
-                        newRow.Cell(41).Value = newAccountingElements[newRowCounter].FeesPaypal;                  // 7780
-                        newRow.Cell(42).Value = newAccountingElements[newRowCounter].FeesStripe;                  // 7785 
+                        newRow.Cell(41).Value = newAccountingElements[newRowCounter].FeesBank;                    // 7770
+                        newRow.Cell(42).Value = newAccountingElements[newRowCounter].FeesPaypal;                  // 7780
+                        newRow.Cell(43).Value = newAccountingElements[newRowCounter].FeesStripe;                  // 7785 
 
-                        newRow.Cell(43).Value = newAccountingElements[newRowCounter].CostForEstablishment;        // 7790
+                        newRow.Cell(44).Value = newAccountingElements[newRowCounter].CostForEstablishment;        // 7790
 
-                        newRow.Cell(44).Value = newAccountingElements[newRowCounter].IncomeFinance;               // 8099
-                        newRow.Cell(45).Value = newAccountingElements[newRowCounter].CostOfFinance;               // 8199
+                        newRow.Cell(45).Value = newAccountingElements[newRowCounter].IncomeFinance;               // 8099
+                        newRow.Cell(46).Value = newAccountingElements[newRowCounter].CostOfFinance;               // 8199
 
-                        newRow.Cell(46).Value = newAccountingElements[newRowCounter].Investments;                 // 1200
-                        newRow.Cell(47).Value = newAccountingElements[newRowCounter].AccountsReceivable;          // 1500
-                        newRow.Cell(48).Value = newAccountingElements[newRowCounter].PersonalWithdrawal;
-                        newRow.Cell(49).Value = newAccountingElements[newRowCounter].PersonalDeposit;
+                        newRow.Cell(47).Value = newAccountingElements[newRowCounter].Investments;                 // 1200
+                        newRow.Cell(48).Value = newAccountingElements[newRowCounter].AccountsReceivable;          // 1500
+                        newRow.Cell(49).Value = newAccountingElements[newRowCounter].PersonalWithdrawal;
+                        newRow.Cell(50).Value = newAccountingElements[newRowCounter].PersonalDeposit;
 
                         SetExcelRowFormulas(newRow);
                         SetExcelRowStyles(newRow);
@@ -424,7 +427,9 @@ namespace AccountingRobot
                     accountingItem.CostForFacilities = ExcelUtils.GetExcelField<decimal>(row, "Kontorkostnader");	// 6800 
 
                     accountingItem.CostOfData = ExcelUtils.GetExcelField<decimal>(row, "Datakostnader");	// 6810 
-                    accountingItem.CostOfPhoneInternet = ExcelUtils.GetExcelField<decimal>(row, "Telefon Internett");	// 6900
+                    accountingItem.CostOfPhoneInternetUse = ExcelUtils.GetExcelField<decimal>(row, "Telefon Internett Bruk");	// 6900
+                    accountingItem.PrivateUseOfECom = ExcelUtils.GetExcelField<decimal>(row, "Privat bruk av el.kommunikasjon");	// 7098
+                    
                     accountingItem.CostForTravelAndAllowance = ExcelUtils.GetExcelField<decimal>(row, "Reise og Diett");	// 7140
                     accountingItem.CostOfAdvertising = ExcelUtils.GetExcelField<decimal>(row, "Reklamekostnader");	// 7330
                     accountingItem.CostOfOther = ExcelUtils.GetExcelField<decimal>(row, "Diverse annet");	// 7700
@@ -495,8 +500,8 @@ namespace AccountingRobot
             }
 
             // resize
-            ws.Columns().AdjustToContents();  // Adjust column width
-            ws.Rows().AdjustToContents();     // Adjust row heights
+            //ws.Columns().AdjustToContents();  // Adjust column width
+            //ws.Rows().AdjustToContents();     // Adjust row heights
 
             wb.Save();
             Console.Out.WriteLine("\rSuccessfully updated accounting file!");
@@ -507,16 +512,16 @@ namespace AccountingRobot
             int currentRow = row.RowNumber();
 
             // create formulas
-            string controlFormula = string.Format("=IF(AY{0}=0,\" \",\"!!FEIL!!\")", currentRow);
-            string sumPreRoundingFormula = string.Format("=SUM(Q{0}:AW{0})", currentRow);
-            string sumRoundedFormula = string.Format("=ROUND(AX{0},2)", currentRow);
+            string controlFormula = string.Format("=IF(AZ{0}=0,\" \",\"!!FEIL!!\")", currentRow);
+            string sumPreRoundingFormula = string.Format("=SUM(Q{0}:AX{0})", currentRow);
+            string sumRoundedFormula = string.Format("=ROUND(AY{0},2)", currentRow);
             string vatSales = string.Format("=-(O{0}/1.25)*0.25", currentRow);
             string salesVATExempt = string.Format("=-(O{0}/1.25)", currentRow);
 
             // apply formulas to cells.
             row.Cell("A").FormulaA1 = controlFormula;
-            row.Cell("AX").FormulaA1 = sumPreRoundingFormula;
-            row.Cell("AY").FormulaA1 = sumRoundedFormula;
+            row.Cell("AY").FormulaA1 = sumPreRoundingFormula;
+            row.Cell("AZ").FormulaA1 = sumRoundedFormula;
 
             // add VAT formulas
             if (row.Cell("P").Value.Equals("NOK")
@@ -546,13 +551,13 @@ namespace AccountingRobot
             var lightBlue = XLColor.FromArgb(0xEAF1FA);
             var lighterBlue = XLColor.FromArgb(0xC5D9F1);
             var blue = currentRow % 2 == 0 ? lightBlue : lighterBlue;
-            row.Cells("AT", "AW").Style.Fill.BackgroundColor = blue;
+            row.Cells("AU", "AX").Style.Fill.BackgroundColor = blue;
 
             // set background color for control sum
             var lightRed = XLColor.FromArgb(0xE6B8B7);
             var lighterRed = XLColor.FromArgb(0xF2DCDB);
             var red = currentRow % 2 == 0 ? lightRed : lighterRed;
-            row.Cell("AY").Style.Fill.BackgroundColor = red;
+            row.Cell("AZ").Style.Fill.BackgroundColor = red;
 
             // set column formats
             row.Cell("C").Style.NumberFormat.Format = "dd.MM.yyyy";
@@ -568,8 +573,8 @@ namespace AccountingRobot
             row.Cell("O").DataType = XLDataType.Number;
 
             // set style and format for the decimal range
-            row.Cells("Q", "AY").Style.NumberFormat.Format = "#,##0.00;[Red]-#,##0.00;";
-            row.Cells("Q", "AY").DataType = XLDataType.Number;
+            row.Cells("Q", "AZ").Style.NumberFormat.Format = "#,##0.00;[Red]-#,##0.00;";
+            row.Cells("Q", "AZ").DataType = XLDataType.Number;
         }
 
         static void SetExcelTableTotalsRowFunction(IXLTable table)
@@ -600,7 +605,8 @@ namespace AccountingRobot
             table.Field("Kontorkostnader").TotalsRowFunction = XLTotalsRowFunction.Sum;          // 6800 
 
             table.Field("Datakostnader").TotalsRowFunction = XLTotalsRowFunction.Sum;                 // 6810 
-            table.Field("Telefon Internett").TotalsRowFunction = XLTotalsRowFunction.Sum;        // 6900
+            table.Field("Telefon Internett Bruk").TotalsRowFunction = XLTotalsRowFunction.Sum;        // 6900
+            table.Field("Privat bruk av el.kommunikasjon").TotalsRowFunction = XLTotalsRowFunction.Sum;        // 7098
             table.Field("Reise og Diett").TotalsRowFunction = XLTotalsRowFunction.Sum;  // 7140
             table.Field("Reklamekostnader").TotalsRowFunction = XLTotalsRowFunction.Sum;          // 7330
             table.Field("Diverse annet").TotalsRowFunction = XLTotalsRowFunction.Sum;                // 7700
@@ -629,7 +635,7 @@ namespace AccountingRobot
             dt.Columns.Add("Periode", typeof(int));
             dt.Columns.Add("Dato", typeof(DateTime));
             dt.Columns.Add("Bilagsnr.", typeof(int));
-            dt.Columns.Add("Arkivreferanse", typeof(long));
+            dt.Columns.Add("Arkivreferanse", typeof(string)); // ensure the archive reference is stored as text
             dt.Columns.Add("TransaksjonsId", typeof(string));
             dt.Columns.Add("Type", typeof(string));
             dt.Columns.Add("Regnskapstype", typeof(string));
@@ -665,7 +671,8 @@ namespace AccountingRobot
             dt.Columns.Add("Kontorkostnader", typeof(decimal));                 // 6800 
 
             dt.Columns.Add("Datakostnader", typeof(decimal));                   // 6810 
-            dt.Columns.Add("Telefon Internett", typeof(decimal));               // 6900
+            dt.Columns.Add("Telefon Internett Bruk", typeof(decimal));          // 6900
+            dt.Columns.Add("Privat bruk av el.kommunikasjon", typeof(decimal)); // 7098
             dt.Columns.Add("Reise og Diett", typeof(decimal));                  // 7140
             dt.Columns.Add("Reklamekostnader", typeof(decimal));                // 7330
             dt.Columns.Add("Diverse annet", typeof(decimal));                   // 7700
@@ -730,7 +737,8 @@ namespace AccountingRobot
                     accountingItem.CostForFacilities,           // 6800 
 
                     accountingItem.CostOfData,                  // 6810 
-                    accountingItem.CostOfPhoneInternet,         // 6900
+                    accountingItem.CostOfPhoneInternetUse,      // 6900
+                    accountingItem.PrivateUseOfECom,            // 7098
                     accountingItem.CostForTravelAndAllowance,   // 7140
                     accountingItem.CostOfAdvertising,           // 7330
                     accountingItem.CostOfOther,                 // 7700

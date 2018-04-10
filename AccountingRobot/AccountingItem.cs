@@ -43,12 +43,13 @@ namespace AccountingRobot
         public decimal CostForDepreciation { get; set; }        // 6000
         public decimal CostForShipping { get; set; }            // 6100
         public decimal CostForElectricity { get; set; }         // 6340 
-        public decimal CostForToolsInventory { get; set; }      // 6500
+        public decimal CostForToolsInventory { get; set; }      // 6500 (includes purchasing cell phones etc.)
         public decimal CostForMaintenance { get; set; }         // 6695
         public decimal CostForFacilities { get; set; }          // 6800 
 
         public decimal CostOfData { get; set; }                 // 6810 
-        public decimal CostOfPhoneInternet { get; set; }        // 6900
+        public decimal CostOfPhoneInternetUse { get; set; }     // 6900
+        public decimal PrivateUseOfECom { get; set; }           // 7098 (tilbakeføringskonto vedr. EKOM)
         public decimal CostForTravelAndAllowance { get; set; }  // 7140
         public decimal CostOfAdvertising { get; set; }          // 7330
         public decimal CostOfOther { get; set; }                // 7700
@@ -162,7 +163,8 @@ namespace AccountingRobot
             Map(m => m.CostForFacilities);
 
             Map(m => m.CostOfData);
-            Map(m => m.CostOfPhoneInternet);
+            Map(m => m.CostOfPhoneInternetUse);
+            Map(m => m.PrivateUseOfECom);
             Map(m => m.CostForTravelAndAllowance);
             Map(m => m.CostOfAdvertising);
             Map(m => m.CostOfOther);

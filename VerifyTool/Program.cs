@@ -184,7 +184,8 @@ namespace VerifyTool
                     accountingItem.CostForFacilities = ExcelUtils.GetExcelField<decimal>(row, "Kontorkostnader");   // 6800 
 
                     accountingItem.CostOfData = ExcelUtils.GetExcelField<decimal>(row, "Datakostnader");    // 6810 
-                    accountingItem.CostOfPhoneInternet = ExcelUtils.GetExcelField<decimal>(row, "Telefon Internett");   // 6900
+                    accountingItem.CostOfPhoneInternetUse = ExcelUtils.GetExcelField<decimal>(row, "Telefon Internett Bruk");   // 6900
+                    accountingItem.PrivateUseOfECom = ExcelUtils.GetExcelField<decimal>(row, "Privat bruk av el.kommunikasjon");   // 7098
                     accountingItem.CostForTravelAndAllowance = ExcelUtils.GetExcelField<decimal>(row, "Reise og Diett");    // 7140
                     accountingItem.CostOfAdvertising = ExcelUtils.GetExcelField<decimal>(row, "Reklamekostnader");  // 7330
                     accountingItem.CostOfOther = ExcelUtils.GetExcelField<decimal>(row, "Diverse annet");   // 7700
