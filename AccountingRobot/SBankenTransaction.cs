@@ -298,7 +298,7 @@ namespace AccountingRobot
                 this.AccountingType = AccountingTypeEnum.CostOfInvoice;
                 //this.Type = "Giro m/ KID";
                 return;
-            }          
+            }
             else if (Type.Equals("OVFNETTB"))
             {
                 this.AccountingType = AccountingTypeEnum.TransferUnknown;
@@ -312,7 +312,8 @@ namespace AccountingRobot
                 var vendor = ExternalPurchaseVendor;
 
                 if (vendor.CaseInsensitiveContains("Wazalo")
-                    || vendor.CaseInsensitiveContains("Shopifycomc"))
+                    || vendor.CaseInsensitiveContains("Shopifycomc")
+                    || vendor.CaseInsensitiveContains("SHOPIFY.COM/C"))
                 {
                     this.AccountingType = AccountingTypeEnum.CostOfWebShop;
                 }
